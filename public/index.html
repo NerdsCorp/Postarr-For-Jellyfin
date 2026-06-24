@@ -461,7 +461,7 @@ function renderUpcoming(s) {
   }));
   (s.available || []).slice(0, 6).forEach(m => items.push({
     title: m.title, year: m.year, posterUrl: m.posterUrl,
-    status: 'available', label: 'Available', rating: m.imdbRating,
+    status: 'available', label: 'Available', rating: m.rating || m.imdbRating,
   }));
   (s.requested || []).slice(0, 6).forEach(r => items.push({
     title: r.title, year: r.year, posterUrl: r.posterUrl,
@@ -493,9 +493,26 @@ function renderSpotlight(s) {
   const sp = s.spotlight;
   if (!sp) return;
   document.getElementById('spTitle').textContent = sp.title || '—';
-  document.getElementById('spMeta').textContent = [sp.year, sp.source === 'radarr' ? 'Movie' : 'TV'].filter(Boolean).join(' · ');
-  document.getElementById('spStatus').innerHTML = `↓ Downloading &mdash; ${sp.pct}% complete`;
-  document.getElementById('spOverview').textContent = '';
+
+  const typeLabel = sp.source === 'sonarr' ? 'TV Series' : 'Movie';
+  document.getElementById('spMeta').textContent = [sp.year, typeLabel].filter(Boolean).join(' · ');
+
+  const statusEl = document.getElementById('spStatus');
+  if (sp.pct !== null && sp.pct !== undefined && sp.status === 'downloading') {
+    statusEl.innerHTML = `↓ Downloading &mdash; ${sp.pct}% complete`;
+    statusEl.style.display = '';
+  } else if (sp.status === 'available') {
+    statusEl.innerHTML = '✓ In your library';
+    statusEl.style.display = '';
+  } else {
+    statusEl.style.display = 'none';
+  }
+
+  document.getElementById('spOverview').textContent = sp.overview || '';
+  document.getElementById('spEyebrow').textContent =
+    sp.status === 'downloading' ? 'Arriving Soon' :
+    sp.status === 'requested' ? 'Requested' : 'From Your Library';
+
   if (sp.posterUrl) {
     document.getElementById('spPoster').src = sp.posterUrl;
     document.getElementById('spBg').style.backgroundImage = `url('${sp.posterUrl}')`;

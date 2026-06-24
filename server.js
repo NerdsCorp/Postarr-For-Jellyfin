@@ -90,6 +90,44 @@ async function getActiveSessions() {
   };
 }
 
+// ── Jellyfin: library fallback (recently added + recently played) ─
+async function getJellyfinLibrary() {
+  if (!config.jellyfin.url || !config.jellyfin.apiKey) return [];
+
+  const [recentlyAdded, recentlyPlayed] = await Promise.all([
+    apiFetch(
+      `${config.jellyfin.url}/Items?SortBy=DateCreated&SortOrder=Descending&IncludeItemTypes=Movie,Series&Recursive=true&Limit=18&Fields=PrimaryImageAspectRatio,Overview,Genres,CommunityRating,OfficialRating,ProductionYear&api_key=${config.jellyfin.apiKey}`,
+      config.jellyfin.apiKey,
+      'Jellyfin'
+    ),
+    apiFetch(
+      `${config.jellyfin.url}/Items?SortBy=DatePlayed&SortOrder=Descending&IncludeItemTypes=Movie,Series&Recursive=true&Limit=6&Fields=PrimaryImageAspectRatio,Overview,Genres,CommunityRating,OfficialRating,ProductionYear&Filters=IsPlayed&api_key=${config.jellyfin.apiKey}`,
+      config.jellyfin.apiKey,
+      'Jellyfin'
+    ),
+  ]);
+
+  const seen = new Set();
+  const items = [
+    ...(recentlyAdded?.Items || []),
+    ...(recentlyPlayed?.Items || []),
+  ].filter(item => {
+    if (seen.has(item.Id)) return false;
+    seen.add(item.Id);
+    return true;
+  });
+
+  return items.slice(0, 12).map(item => ({
+    title: item.Name,
+    year: item.ProductionYear || '',
+    overview: item.Overview || '',
+    rating: item.CommunityRating ? item.CommunityRating.toFixed(1) : null,
+    status: 'available',
+    source: 'jellyfin',
+    posterUrl: `${config.jellyfin.url}/Items/${item.Id}/Images/Primary?maxHeight=400&quality=85&api_key=${config.jellyfin.apiKey}`,
+  }));
+}
+
 // ── Radarr: queue + movie details ────────────────────────────────
 async function getRadarrData() {
   if (!config.radarr.url || !config.radarr.apiKey) return { queue: [], movies: [] };
@@ -242,24 +280,31 @@ app.get('/api/state', async (req, res) => {
         fileDetails,
         meta: seerData.nowPlayingMeta,
       };
-      // Prefer TMDB backdrop over Jellyfin if available
-      if (seerData.nowPlayingMeta?.backdropUrl) {
-        nowPlaying.backdropUrl = seerData.nowPlayingMeta.backdropUrl;
-      }
-      if (seerData.nowPlayingMeta?.posterUrl) {
-        nowPlaying.posterUrl = seerData.nowPlayingMeta.posterUrl;
-      }
+      // Prefer TMDB backdrop/poster from Seer over Jellyfin if available
+      if (seerData.nowPlayingMeta?.backdropUrl) nowPlaying.backdropUrl = seerData.nowPlayingMeta.backdropUrl;
+      if (seerData.nowPlayingMeta?.posterUrl) nowPlaying.posterUrl = seerData.nowPlayingMeta.posterUrl;
     }
 
-    // Build upcoming list: radarr queue + requests, deduplicated
+    // Build upcoming — fall back to Jellyfin library when Radarr/Seer aren't configured
     const downloading = [...radarrData.queue, ...sonarrData.queue];
     const requested = seerData.requests;
-    const available = radarrData.movies;
+    let available = radarrData.movies;
 
-    // Spotlight: pick highest-progress downloading item
-    const spotlight = downloading.length > 0
+    if (available.length === 0 && requested.length === 0 && downloading.length === 0) {
+      // No *arr services — pull straight from Jellyfin library
+      available = await getJellyfinLibrary();
+    }
+
+    // Spotlight: highest-progress downloading item, or most recent Jellyfin addition
+    let spotlight = downloading.length > 0
       ? downloading.reduce((a, b) => (a.pct > b.pct ? a : b))
       : null;
+
+    // If no downloads, spotlight the first available item that isn't now-playing
+    if (!spotlight && available.length > 0) {
+      spotlight = available.find(m => m.title !== session?.title) || available[0];
+      if (spotlight) spotlight = { ...spotlight, pct: null, status: 'available' };
+    }
 
     res.json({
       nowPlaying,
