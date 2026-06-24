@@ -135,10 +135,11 @@
   #s-up { background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px 40px 28px; gap: 20px; min-height: 100%; }
   #s-up h1 { font-family: 'DM Serif Display', serif; font-size: clamp(2rem,4vw,3rem); font-weight: 400; margin-bottom: 6px; }
   #s-up .sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
-  .up-card { width: min(1040px,100%); display: grid; gap: 18px; background: linear-gradient(180deg, rgba(17,17,24,0.98), rgba(20,20,28,0.98)); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 28px; box-shadow: 0 36px 120px rgba(0,0,0,0.32); }
+  .up-card { width: min(1040px,100%); display: grid; gap: 18px; background: linear-gradient(180deg, rgba(17,17,24,0.98), rgba(20,20,28,0.98)); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 28px; box-shadow: 0 36px 120px rgba(0,0,0,0.32); margin: 0 auto; }
   .up-poster-wrap { position: relative; width: 100%; display: grid; place-items: center; }
   .up-poster { width: 100%; max-width: 760px; aspect-ratio: 2/3; object-fit: cover; border-radius: 18px; border: 1px solid var(--border); background: var(--surface2); box-shadow: 0 24px 80px rgba(0,0,0,0.24); }
-  .up-details { display: grid; gap: 14px; }
+  .up-poster-placeholder { width: 100%; max-width: 760px; aspect-ratio: 2/3; display: grid; place-items: center; border-radius: 18px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--muted); font-size: var(--fs-xs); text-align: center; padding: 24px; box-shadow: 0 24px 80px rgba(0,0,0,0.16); }
+  .up-details { display: grid; gap: 14px; align-items: center; text-align: center; }
   .up-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); }
   .up-title { font-family: 'DM Serif Display', serif; font-size: clamp(2.4rem,5vw,4rem); line-height: 1.02; }
   .up-meta { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
@@ -159,9 +160,9 @@
   /* ═══ SCREEN 3: SPOTLIGHT — single movie hero ═══ */
   #s-sp { position: relative; display: flex; align-items: center; justify-content: center; padding: 0 clamp(28px,5.5vw,72px); min-height: 100%; }
   .sp-bg, .sp-grad { display: none; }
-  .sp-body { width: min(1040px,100%); display: grid; gap: clamp(22px,2.5vw,34px); background: linear-gradient(180deg, rgba(17,17,24,0.96), rgba(20,20,28,0.96)); border: 1px solid rgba(255,255,255,0.08); border-radius: calc(var(--radius) * 1.5); padding: clamp(24px,2.8vh,34px); box-shadow: 0 36px 120px rgba(0,0,0,0.32); }
+  .sp-body { width: min(1040px,100%); display: grid; gap: clamp(22px,2.5vw,34px); background: linear-gradient(180deg, rgba(17,17,24,0.96), rgba(20,20,28,0.96)); border: 1px solid rgba(255,255,255,0.08); border-radius: calc(var(--radius) * 1.5); padding: clamp(24px,2.8vh,34px); box-shadow: 0 36px 120px rgba(0,0,0,0.32); margin: 0 auto; }
   .sp-poster { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: calc(var(--radius) * 1.5); border: 1px solid var(--border); background: var(--surface2); box-shadow: 0 22px 80px rgba(0,0,0,0.28); }
-  .sp-info { display: grid; gap: clamp(12px,1.2vw,18px); }
+  .sp-info { display: grid; gap: clamp(12px,1.2vw,18px); align-items: center; text-align: center; }
   .sp-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0; display: inline-flex; align-items: center; gap: 8px; }
   .sp-eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: var(--accent); }
   .sp-title { font-family: 'DM Serif Display', serif; font-size: clamp(2.4rem,5vw,4.2rem); line-height: 1.02; margin-bottom: 0; }
@@ -454,7 +455,7 @@ function renderUpNext(s){
 }
 
 function renderUpcoming(s){
-  const all = items(s,'all').filter(i=>i.posterUrl);
+  const all = items(s,'all');
   const choice = all.length ? all[Math.floor(Math.random() * all.length)] : null;
   const container = document.getElementById('upCard');
   document.getElementById('upSub').textContent = svcSub(s);
@@ -471,7 +472,7 @@ function renderUpcoming(s){
 
   container.innerHTML = `
     <div class="up-poster-wrap">
-      <img class="up-poster" src="${choice.posterUrl}" alt="${choice.title}">
+      ${choice.posterUrl ? `<img class="up-poster" src="${choice.posterUrl}" alt="${choice.title}">` : `<div class="up-poster-placeholder">No artwork available</div>`}
       <div class="up-label">${choice.type === 'series' ? 'TV / Series' : 'Movie'}</div>
     </div>
     <div class="up-details">
@@ -493,8 +494,10 @@ function renderSpotlight(s){
   if(sp.status==='downloading'&&sp.pct!=null){st.innerHTML=`↓ Downloading — ${sp.pct}% complete`;st.style.display='';}
   else if(sp.status==='available'){st.innerHTML='✓ In your library';st.style.display='';}
   else st.style.display='none';
-  document.getElementById('spOv').textContent=sp.overview||'';
-  if(sp.posterUrl){document.getElementById('spPoster').src=sp.posterUrl;document.getElementById('spBg').style.backgroundImage=`url('${sp.posterUrl}')`;}
+  document.getElementById('spOv').textContent=sp.overview||'A featured selection from your collection.';
+  const posterEl = document.getElementById('spPoster');
+  if(sp.posterUrl){posterEl.src=sp.posterUrl; posterEl.alt=sp.title || 'Spotlight poster'; posterEl.style.opacity='1'; document.getElementById('spBg').style.backgroundImage=`url('${sp.posterUrl}')`;}
+  else { posterEl.src=''; posterEl.alt='No poster available'; posterEl.style.opacity='0.3'; document.getElementById('spBg').style.backgroundImage='none'; }
   const re=document.getElementById('spRats'); re.innerHTML='';
   if(sp.rating)re.innerHTML=`<div class="sp-rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sp.rating).toFixed(1)}</span><span class="srl">Rating</span></div>`;
   const ce=document.getElementById('spCast');
@@ -507,7 +510,7 @@ function renderIdle(s){
     ...(s.available||[]).map(i=>({...i, sourceLabel:'Available'})),
     ...(s.requested||[]).map(i=>({...i, sourceLabel:'Requested'})),
     ...(s.downloading||[]).map(i=>({...i, sourceLabel:'Downloading'})),
-  ].filter(i=>i.posterUrl);
+  ];
   const choice = items.length ? items[Math.floor(Math.random() * items.length)] : null;
   if(choice){
     document.getElementById('idleTitle').textContent = choice.title || 'Unknown title';
@@ -517,7 +520,7 @@ function renderIdle(s){
     document.getElementById('idleMeta').textContent = 'A random movie or TV show';
   }
 
-  const urls = items.map(i=>i.posterUrl).slice(0,7);
+  const urls = items.map(i=>i.posterUrl).filter(Boolean).slice(0,7);
   document.getElementById('idlePosts').innerHTML = urls.map(u=>`<img src="${u}" alt="">`).join('');
 }
 
