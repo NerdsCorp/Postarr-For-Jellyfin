@@ -48,7 +48,8 @@
 
   /* ═══ SCREEN SYSTEM ═══ */
   .sc { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
-  .screen { position: absolute; inset: 0; opacity: 0; visibility: hidden; pointer-events: none; }
+  .screen { position: absolute; inset: 0; opacity: 0; visibility: hidden; pointer-events: none;
+    display: flex; align-items: center; justify-content: center; }
   .screen.active { opacity: 1; visibility: visible; pointer-events: all; }
   .fade-ov { position: fixed; inset: 0; background: var(--bg); opacity: 0; z-index: 100; pointer-events: none; }
   .wipe-ov { position: fixed; inset: 0; background: var(--accent); transform: translateX(-101%); z-index: 100; pointer-events: none; }
@@ -237,6 +238,7 @@
       <div class="meta">
         <div class="title" id="npTitle">—</div>
         <div class="year" id="npMeta">—</div>
+        <div class="np-qb" id="npQb" style="display:none"></div>
 
         <div class="progress-wrap">
           <div class="progress-track"><div class="progress-fill" id="npProg" style="width:0%"></div></div>
@@ -406,8 +408,15 @@ function renderNP(np){
 
   // quality badge
   const qb=document.getElementById('npQb');
-  if(np.fileDetails){const fd=np.fileDetails,p=[fd.resolution,fd.hdr,fd.audioCodec].filter(Boolean);if(p.length){qb.textContent=p.join(' · ');qb.style.display='';}else qb.style.display='none';}
-  else qb.style.display='none';
+  if(qb){
+    if(np.fileDetails){
+      const fd=np.fileDetails,p=[fd.resolution,fd.hdr,fd.audioCodec].filter(Boolean);
+      if(p.length){qb.textContent=p.join(' · ');qb.style.display='';}
+      else qb.style.display='none';
+    } else {
+      qb.style.display='none';
+    }
+  }
 
   // ratings
   const re=document.getElementById('npRats'); if(re) { re.innerHTML=''; const sc=np.communityRating||np.meta?.voteAverage; if(sc)re.innerHTML=`<div class="rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sc).toFixed(1)}</span><span class="rl">Rating</span></div>`; }
