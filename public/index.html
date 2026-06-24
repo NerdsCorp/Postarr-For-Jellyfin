@@ -193,7 +193,7 @@
   .pdot.active { background: var(--accent); width: 14px; border-radius: 3px; }
 
   /* ═══ NOW PLAYING HERO CARD ═══ */
-  .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; max-width: 520px; padding: 2rem 1.5rem; margin: 0 auto; min-height: 100%; justify-content: center; }
+  .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0; width: min(980px, calc(100vw - 40px)); max-width: 100%; padding: 2rem 1.5rem; margin: 0 auto; min-height: 100%; justify-content: center; }
   .live-badge { display: flex; align-items: center; gap: 6px; background: rgba(200,169,126,0.12); border: 1px solid rgba(200,169,126,0.25); border-radius: 100px; padding: 4px 12px 4px 8px; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 2rem; }
   .live-dot { width: 7px; height: 7px; background: #e05a5a; border-radius: 50%; animation: pulse 1.8s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.75); } }
@@ -309,12 +309,50 @@ const fadeOv  = document.getElementById('fadeOv');
 const wipeOv  = document.getElementById('wipeOv');
 let cur=3, locked=false, sTmr=null, pTmr=null, progTmr=null, xing=false, state=null;
 let anim='fade', dur=15000, poll=5000, lPos=0, lDur=0, tab='all';
+let spotlightDeck = [];
+let spotlightDeckKey = '';
+let spotlightDeckPos = 0;
 
 // ─── clock ───────────────────────────────────────────────────────
 function tick(){const n=new Date();document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 tick(); setInterval(tick,15000);
 
 function fms(ms){if(!ms||ms<=0)return'0:00:00';const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
+
+function shuffleArray(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function getItemKey(item){
+  return [item.title||'', item.year||'', item.source||'', item.radarrId||item.tmdbId||item.imdbId||item.posterUrl||''].filter(Boolean).join('||');
+}
+
+function buildSpotlightDeck(items){
+  const list = items.filter(i=>i.status==='available' && i.title).map(i=>({
+    key:getItemKey(i),
+    item:i,
+  }));
+  const key = list.map(i=>i.key).join('|');
+  if(spotlightDeckKey !== key){
+    spotlightDeckKey = key;
+    spotlightDeck = shuffleArray(list.slice());
+    spotlightDeckPos = 0;
+  }
+  return spotlightDeck;
+}
+
+function pickNextSpotlightItem(){
+  if(!state) return null;
+  const allItems = items(state,'all');
+  const deck = buildSpotlightDeck(allItems);
+  if(!deck.length) return null;
+  if(spotlightDeckPos >= deck.length) spotlightDeckPos = 0;
+  return deck[spotlightDeckPos++].item;
+}
 
 // ─── transitions ─────────────────────────────────────────────────
 function show(i){ELS.forEach((e,j)=>e.classList.toggle('active',j===i));cur=i;dots();}
@@ -327,6 +365,9 @@ function goTo(i,imm=false){
   else fade(cur,i);
 }
 function fade(f,t){
+  if(t===2 && state?.spotlight?.status==='available'){
+    state.activeSpotlight = pickNextSpotlightItem();
+  }
   fadeOv.style.cssText='transition:none;opacity:0'; fadeOv.offsetHeight;
   fadeOv.style.cssText='transition:opacity 0.38s ease;opacity:1';
   setTimeout(()=>{show(t);fadeOv.style.cssText='transition:opacity 0.42s ease;opacity:0';setTimeout(()=>{xing=false;},430);},390);
@@ -500,7 +541,14 @@ function renderUpcoming(s){
 }
 
 function renderSpotlight(s){
-  const sp=s.spotlight; if(!sp)return;
+  let sp=s.spotlight;
+  if(!sp) return;
+  if(sp.status==='available'){
+    s.activeSpotlight = s.activeSpotlight || pickNextSpotlightItem();
+    sp = s.activeSpotlight || sp;
+  } else if(s.activeSpotlight){
+    delete s.activeSpotlight;
+  }
   document.getElementById('spTitle').textContent=sp.title||'—';
   document.getElementById('spMeta').textContent=[sp.year,sp.source==='sonarr'?'TV Series':'Movie'].filter(Boolean).join(' · ');
   document.getElementById('spEye').textContent=sp.status==='downloading'?'Arriving Soon':sp.status==='requested'?'Requested':'From Your Library';
