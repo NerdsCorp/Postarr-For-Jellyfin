@@ -58,7 +58,7 @@
                 radial-gradient(ellipse 40% 30% at 80% 20%, rgba(124,106,175,0.03) 0%, transparent 70%); }
 
   /* ═══ SCREEN 1: NOW PLAYING — v3 split ═══ */
-  #s-np { display: grid; grid-template-columns: var(--left-w) 1fr; background: var(--bg); min-height: 100%; height: 100%; }
+  #s-np { display: flex; align-items: center; justify-content: center; background: var(--bg); min-height: 100%; height: 100%; }
 
   /* left */
   .np-left { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
@@ -462,8 +462,10 @@ function renderNP(np){
 
 function renderUpNext(s){
   const it=items(s,tab);
-  document.getElementById('npGrid').innerHTML=it.slice(0,16).map(i=>card(i,'mc','cpw')).join('');
-  document.getElementById('npSub').textContent=svcSub(s);
+  const npGrid = document.getElementById('npGrid');
+  if(npGrid) npGrid.innerHTML=it.slice(0,16).map(i=>card(i,'mc','cpw')).join('');
+  const sub = document.getElementById('npSub');
+  if(sub) sub.textContent=svcSub(s);
 }
 
 function renderUpcoming(s){
