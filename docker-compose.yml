@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postarr:
-    build: .
+    image: ghcr.io/nerdscorp/postarr-for-jellyfin:latest
     container_name: postarr
     ports:
       - "3000:3000"

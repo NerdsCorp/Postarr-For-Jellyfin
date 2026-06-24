@@ -21,17 +21,37 @@ The display **locks to Now Playing** whenever someone is actively watching, and 
 
 ## Quick Start (Docker)
 
-```bash
-# 1. Copy and fill in your config
-cp .env.example .env
-nano .env
+The image is published automatically to GitHub Container Registry on every push to `main`.
 
-# 2. Run it
-docker compose up -d
+```bash
+# 1. Grab the env template
+curl -o .env https://raw.githubusercontent.com/NerdsCorp/Postarr-For-Jellyfin/main/.env.example
+nano .env   # fill in your keys
+
+# 2. Pull and run
+docker run -d \
+  --name postarr \
+  --env-file .env \
+  -p 3000:3000 \
+  --restart unless-stopped \
+  ghcr.io/nerdscorp/postarr-for-jellyfin:latest
 
 # 3. Open in your browser
 open http://localhost:3000
 ```
+
+Or with Docker Compose:
+
+```bash
+curl -o docker-compose.yml https://raw.githubusercontent.com/NerdsCorp/Postarr-For-Jellyfin/main/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/NerdsCorp/Postarr-For-Jellyfin/main/.env.example
+nano .env
+docker compose up -d
+```
+
+### Supported platforms
+- `linux/amd64` — Intel / AMD
+- `linux/arm64` — Raspberry Pi 4/5, Apple Silicon
 
 ---
 
