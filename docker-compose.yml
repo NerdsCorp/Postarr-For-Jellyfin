@@ -13,8 +13,8 @@ services:
       - RADARR_API_KEY=${RADARR_API_KEY:-}
       - SONARR_URL=${SONARR_URL:-}
       - SONARR_API_KEY=${SONARR_API_KEY:-}
-      - OVERSEERR_URL=${OVERSEERR_URL:-}
-      - OVERSEERR_API_KEY=${OVERSEERR_API_KEY:-}
+      - SEER_URL=${SEER_URL:-}
+      - SEER_API_KEY=${SEER_API_KEY:-}
       - POLL_INTERVAL=${POLL_INTERVAL:-5}
       - SCREEN_DURATION=${SCREEN_DURATION:-15}
     restart: unless-stopped

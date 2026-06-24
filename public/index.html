@@ -227,7 +227,7 @@
   <div class="screen" id="screen-upcoming">
     <div class="uh">
       <h1>Coming Up</h1>
-      <p id="upcomingSubtitle">Your library · Radarr queue · Jellyseerr requests</p>
+      <p id="upcomingSubtitle">Your library · Radarr queue · Seer requests</p>
     </div>
     <div class="big-grid" id="upcomingGrid"></div>
   </div>
@@ -484,7 +484,7 @@ function renderUpcoming(s) {
   const svcs = [];
   if (s.services?.radarr) svcs.push('Radarr');
   if (s.services?.sonarr) svcs.push('Sonarr');
-  if (s.services?.overseerr) svcs.push('Jellyseerr');
+  if (s.services?.seer) svcs.push('Seer');
   document.getElementById('upcomingSubtitle').textContent =
     svcs.length ? `Your library · ${svcs.join(' · ')}` : 'Your library';
 }
@@ -524,7 +524,7 @@ function updateDots() {
 
 function updateServices(services) {
   const el = document.getElementById('statusServices');
-  const svcs = ['jellyfin', 'radarr', 'sonarr', 'overseerr'];
+  const svcs = ['jellyfin', 'radarr', 'sonarr', 'seer'];
   el.innerHTML = svcs.map(s => `<div class="svc ${services?.[s] ? 'on' : 'off'}">${s}</div>`).join('');
 }
 

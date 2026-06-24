@@ -19,9 +19,9 @@ const config = {
     url: (process.env.SONARR_URL || '').replace(/\/$/, ''),
     apiKey: process.env.SONARR_API_KEY || '',
   },
-  overseerr: {
-    url: (process.env.OVERSEERR_URL || '').replace(/\/$/, ''),
-    apiKey: process.env.OVERSEERR_API_KEY || '',
+  seer: {
+    url: (process.env.SEER_URL || '').replace(/\/$/, ''),
+    apiKey: process.env.SEER_API_KEY || '',
   },
   pollInterval: parseInt(process.env.POLL_INTERVAL || '5', 10),
   screenDuration: parseInt(process.env.SCREEN_DURATION || '15', 10),
@@ -140,14 +140,14 @@ async function getSonarrData() {
   return { queue: queueItems };
 }
 
-// ── Overseerr/Jellyseerr: requests + movie details ───────────────
-async function getOverseerrData(jellyfinTitle) {
-  if (!config.overseerr.url || !config.overseerr.apiKey) return { requests: [], spotlight: null };
+// ── Seer: requests + movie details ───────────────
+async function getSeerData(jellyfinTitle) {
+  if (!config.seer.url || !config.seer.apiKey) return { requests: [], spotlight: null };
 
   const [requests, search] = await Promise.all([
-    apiFetch(`${config.overseerr.url}/api/v1/request?take=20&sort=added`, config.overseerr.apiKey, 'Overseerr'),
+    apiFetch(`${config.seer.url}/api/v1/request?take=20&sort=added`, config.seer.apiKey, 'Seer'),
     jellyfinTitle
-      ? apiFetch(`${config.overseerr.url}/api/v1/search?query=${encodeURIComponent(jellyfinTitle)}&page=1`, config.overseerr.apiKey, 'Overseerr')
+      ? apiFetch(`${config.seer.url}/api/v1/search?query=${encodeURIComponent(jellyfinTitle)}&page=1`, config.seer.apiKey, 'Seer')
       : Promise.resolve(null),
   ]);
 
@@ -155,21 +155,21 @@ async function getOverseerrData(jellyfinTitle) {
     title: r.media?.title || r.media?.name || 'Unknown',
     year: r.media?.releaseDate?.substring(0, 4) || r.media?.firstAirDate?.substring(0, 4) || '',
     status: 'requested',
-    source: 'overseerr',
+    source: 'seer',
     posterUrl: r.media?.posterPath
       ? `https://image.tmdb.org/t/p/w300${r.media.posterPath}`
       : null,
     tmdbId: r.media?.tmdbId,
   }));
 
-  // Enrich now-playing with Overseerr metadata (ratings, cast, etc.)
+  // Enrich now-playing with Seer metadata (ratings, cast, etc.)
   let nowPlayingMeta = null;
   if (search?.results?.length) {
     const match = search.results[0];
     const detail = await apiFetch(
-      `${config.overseerr.url}/api/v1/${match.mediaType}/${match.id}`,
-      config.overseerr.apiKey,
-      'Overseerr'
+      `${config.seer.url}/api/v1/${match.mediaType}/${match.id}`,
+      config.seer.apiKey,
+      'Seer'
     );
     if (detail) {
       nowPlayingMeta = {
@@ -227,8 +227,8 @@ app.get('/api/state', async (req, res) => {
     ]);
 
     // Enrich now-playing in parallel
-    const [overseerrData, fileDetails] = await Promise.all([
-      getOverseerrData(session?.title),
+    const [seerData, fileDetails] = await Promise.all([
+      getSeerData(session?.title),
       session?.type === 'Movie'
         ? getRadarrFileDetails(session.title, session.year)
         : Promise.resolve(null),
@@ -240,20 +240,20 @@ app.get('/api/state', async (req, res) => {
       nowPlaying = {
         ...session,
         fileDetails,
-        meta: overseerrData.nowPlayingMeta,
+        meta: seerData.nowPlayingMeta,
       };
       // Prefer TMDB backdrop over Jellyfin if available
-      if (overseerrData.nowPlayingMeta?.backdropUrl) {
-        nowPlaying.backdropUrl = overseerrData.nowPlayingMeta.backdropUrl;
+      if (seerData.nowPlayingMeta?.backdropUrl) {
+        nowPlaying.backdropUrl = seerData.nowPlayingMeta.backdropUrl;
       }
-      if (overseerrData.nowPlayingMeta?.posterUrl) {
-        nowPlaying.posterUrl = overseerrData.nowPlayingMeta.posterUrl;
+      if (seerData.nowPlayingMeta?.posterUrl) {
+        nowPlaying.posterUrl = seerData.nowPlayingMeta.posterUrl;
       }
     }
 
     // Build upcoming list: radarr queue + requests, deduplicated
     const downloading = [...radarrData.queue, ...sonarrData.queue];
-    const requested = overseerrData.requests;
+    const requested = seerData.requests;
     const available = radarrData.movies;
 
     // Spotlight: pick highest-progress downloading item
@@ -275,7 +275,7 @@ app.get('/api/state', async (req, res) => {
         jellyfin: !!config.jellyfin.url,
         radarr: !!config.radarr.url,
         sonarr: !!config.sonarr.url,
-        overseerr: !!config.overseerr.url,
+        seer: !!config.seer.url,
       },
     });
   } catch (err) {
@@ -293,7 +293,7 @@ app.get('/api/config', (req, res) => {
       jellyfin: !!config.jellyfin.url,
       radarr: !!config.radarr.url,
       sonarr: !!config.sonarr.url,
-      overseerr: !!config.overseerr.url,
+      seer: !!config.seer.url,
     },
   });
 });
@@ -311,7 +311,7 @@ app.listen(PORT, () => {
   console.log(`   Jellyfin: ${config.jellyfin.url || '⚠️  not configured'}`);
   console.log(`   Radarr:   ${config.radarr.url || '— not configured'}`);
   console.log(`   Sonarr:   ${config.sonarr.url || '— not configured'}`);
-  console.log(`   Overseerr:${config.overseerr.url || '— not configured'}`);
+  console.log(`   Seer:${config.seer.url || '— not configured'}`);
   console.log(`   Poll:     every ${config.pollInterval}s`);
   console.log(`   Screens:  ${config.screenDuration}s each\n`);
 });

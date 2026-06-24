@@ -1,6 +1,6 @@
 # Postarr for Jellyfin
 
-A cinematic now-playing display for Jellyfin — with optional Radarr, Sonarr, and Overseerr/Jellyseerr integration. Open it in a browser on any screen and it automatically rotates between what's playing, what's coming up, and a spotlight on your next download.
+A cinematic now-playing display for Jellyfin — with optional Radarr, Sonarr, and Seer integration. Open it in a browser on any screen and it automatically rotates between what's playing, what's coming up, and a spotlight on your next download.
 
 
 ---
@@ -10,7 +10,7 @@ A cinematic now-playing display for Jellyfin — with optional Radarr, Sonarr, a
 | Screen | Description |
 |--------|-------------|
 | **Now Playing** | Full cinematic view — poster, blurred backdrop, progress bar, who's watching, ratings, file info, cast |
-| **Upcoming** | Grid of your library, Radarr queue, and Jellyseerr requests with status badges |
+| **Upcoming** | Grid of your library, Radarr queue, and Seer requests with status badges |
 | **Spotlight** | Hero view for the highest-progress downloading item |
 | **Idle** | Minimal clock when nothing is playing |
 
@@ -72,8 +72,8 @@ SONARR_URL=http://192.168.1.100:8989
 SONARR_API_KEY=your_key_here
 
 # Optional — adds ratings, cast, requests
-OVERSEERR_URL=http://192.168.1.100:5055
-OVERSEERR_API_KEY=your_key_here
+SEER_URL=http://192.168.1.100:5055
+SEER_API_KEY=your_key_here
 
 # Timing
 POLL_INTERVAL=5       # seconds between Jellyfin polls
@@ -84,7 +84,7 @@ SCREEN_DURATION=15    # seconds per screen in rotation
 
 - **Jellyfin**: Dashboard → API Keys → + Add Key
 - **Radarr / Sonarr**: Settings → General → API Key
-- **Overseerr / Jellyseerr**: Settings → General → API Key
+- **Seer**: Settings → General → API Key
 
 ---
 
@@ -95,7 +95,7 @@ SCREEN_DURATION=15    # seconds per screen in rotation
 | Jellyfin | Now playing, who's watching, device, progress, community rating |
 | Radarr | File resolution, codec, HDR type, audio, file size, download queue |
 | Sonarr | TV download queue |
-| Overseerr / Jellyseerr | Cast, director, RT/IMDb ratings, requests list |
+| Seer | Cast, director, RT/IMDb ratings, requests list |
 
 All integrations are optional — Postarr works with just Jellyfin.
 
