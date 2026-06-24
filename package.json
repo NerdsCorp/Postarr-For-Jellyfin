@@ -1,0 +1,18 @@
+{
+  "name": "postarr-for-jellyfin",
+  "version": "1.0.0",
+  "description": "A cinematic now-playing display for Jellyfin with Radarr, Sonarr, and Overseerr/Jellyseerr integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

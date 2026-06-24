@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Postarr · Jellyfin Display</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #090910;
+    --surface: #111118;
+    --surface2: #18181f;
+    --border: rgba(255,255,255,0.07);
+    --accent: #c8a97e;
+    --accent-dim: rgba(200,169,126,0.15);
+    --text: #e8e4dc;
+    --muted: #6b6878;
+    --muted2: #2e2c37;
+    --red: #e05a5a;
+    --green: #5ae07a;
+    --blue: #a0a0f0;
+  }
+
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+  }
+
+  /* ══ SCREEN SYSTEM ══ */
+  .screen-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  .screen { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: none; }
+  .screen.active { opacity: 1; pointer-events: all; }
+
+  .fade-overlay { position: fixed; inset: 0; background: var(--bg); opacity: 0; z-index: 100; pointer-events: none; }
+  .wipe-overlay { position: fixed; inset: 0; background: var(--bg); transform: translateX(-100%); z-index: 100; pointer-events: none; }
+
+  /* ══ SHARED: CINEMATIC BG ══ */
+  .cin-bg {
+    position: absolute; inset: -8%;
+    background-size: cover; background-position: center top;
+    filter: blur(32px) brightness(0.22) saturate(1.4);
+    transform: scale(1.1); z-index: 0;
+    transition: background-image 1s ease;
+  }
+  .cin-vignette {
+    position: absolute; inset: 0; z-index: 1;
+    background:
+      linear-gradient(90deg, rgba(9,9,16,0.97) 30%, rgba(9,9,16,0.55) 62%, rgba(9,9,16,0.2) 100%),
+      linear-gradient(0deg, rgba(9,9,16,0.65) 0%, transparent 40%);
+  }
+
+  /* ══ SCREEN 1: NOW PLAYING ══ */
+  #screen-nowplaying { overflow: hidden; }
+  .np-content {
+    position: relative; z-index: 2;
+    display: flex; align-items: center;
+    height: 100%; padding: 0 72px; gap: 64px;
+  }
+  .np-poster-wrap { flex-shrink: 0; position: relative; }
+  .np-poster {
+    width: 260px; aspect-ratio: 2/3; object-fit: cover;
+    border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 32px 96px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
+    display: block; background: var(--surface2);
+  }
+  .np-live {
+    position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(9,9,16,0.82); backdrop-filter: blur(10px);
+    border: 1px solid rgba(200,169,126,0.3); border-radius: 100px;
+    padding: 4px 12px 4px 9px; white-space: nowrap;
+    font-size: 9px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent);
+  }
+  .live-dot { width: 5px; height: 5px; background: var(--red); border-radius: 50%; animation: pulse 1.8s ease-in-out infinite; flex-shrink: 0; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.65)} }
+  .np-quality {
+    position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%);
+    background: rgba(9,9,16,0.82); backdrop-filter: blur(10px);
+    border: 1px solid rgba(200,169,126,0.2); border-radius: 6px;
+    padding: 4px 12px; white-space: nowrap;
+    font-size: 9px; font-weight: 600; letter-spacing: .08em; color: var(--accent);
+  }
+  .np-info { flex: 1; max-width: 540px; }
+  .np-eyebrow {
+    font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .np-eyebrow::before { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+  .np-title { font-family: 'DM Serif Display', serif; font-size: 3.8rem; line-height: 1.0; margin-bottom: 8px; }
+  .np-meta { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+  .np-progress { margin-bottom: 20px; }
+  .np-prog-track { height: 2px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 7px; }
+  .np-prog-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #e8c99a); border-radius: 2px; transition: width 2s linear; }
+  .np-prog-times { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .np-watcher {
+    display: inline-flex; align-items: center; gap: 9px; padding: 7px 14px; margin-bottom: 20px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px;
+    font-size: 12px; color: var(--muted);
+  }
+  .np-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg,#7c6aaf,#c8a97e); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; flex-shrink: 0; }
+  .np-ratings { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .np-rpill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 7px 14px; font-size: 14px; font-weight: 600; }
+  .np-rpill .rl { font-size: 9px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .np-overview { font-size: 13px; color: var(--muted); line-height: 1.75; margin-bottom: 24px; max-width: 460px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .np-bottom { display: flex; gap: 36px; align-items: flex-start; flex-wrap: wrap; }
+  .np-cast-label { font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-bottom: 10px; }
+  .np-cast-row { display: flex; gap: 10px; }
+  .np-cast-item { text-align: center; }
+  .np-cast-item img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255,255,255,0.1); margin-bottom: 4px; display: block; background: var(--surface2); }
+  .np-cast-item span { font-size: 9px; color: var(--muted); display: block; line-height: 1.3; max-width: 46px; }
+  .np-file { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .np-fchip { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07); border-radius: 7px; padding: 6px 10px; }
+  .np-fchip .fl { font-size: 8px; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: block; margin-bottom: 2px; }
+  .np-fchip .fv { font-size: 11px; font-weight: 600; }
+
+  /* ══ SCREEN 2: UPCOMING ══ */
+  #screen-upcoming { background: var(--bg); display: flex; flex-direction: column; padding: 40px 48px 36px; gap: 22px; }
+  .uh h1 { font-family: 'DM Serif Display', serif; font-size: 2.2rem; font-weight: 400; margin-bottom: 4px; }
+  .uh p { font-size: 12px; color: var(--muted); }
+  .big-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; flex: 1; overflow: hidden; align-content: start; }
+  .big-card { transition: transform .2s; }
+  .big-card:hover { transform: translateY(-4px); }
+  .big-card:hover .bp { border-color: rgba(200,169,126,.4); box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+  .bpw { position: relative; margin-bottom: 9px; }
+  .bp { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 9px; display: block; border: 1px solid var(--border); transition: all .2s; background: var(--surface2); }
+  .bcs { position: absolute; bottom: 8px; left: 7px; font-size: 8px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; }
+  .s-av { background: rgba(90,224,122,.15); color: var(--green); border: 1px solid rgba(90,224,122,.3); }
+  .s-dl { background: rgba(200,169,126,.15); color: var(--accent); border: 1px solid rgba(200,169,126,.3); }
+  .s-rq { background: rgba(100,100,200,.15); color: var(--blue); border: 1px solid rgba(100,100,200,.3); }
+  .bcr { position: absolute; top: 7px; right: 7px; background: rgba(0,0,0,.72); backdrop-filter: blur(4px); border-radius: 3px; padding: 2px 5px; font-size: 8px; font-weight: 700; color: #f5c518; }
+  .bt { font-size: 13px; font-weight: 500; margin-bottom: 2px; line-height: 1.3; }
+  .bm { font-size: 10px; color: var(--muted); }
+
+  /* ══ SCREEN 3: SPOTLIGHT ══ */
+  #screen-spotlight { overflow: hidden; }
+  .sp-content { position: relative; z-index: 2; display: flex; align-items: center; height: 100%; padding: 0 72px; gap: 64px; }
+  .sp-poster { width: 240px; flex-shrink: 0; aspect-ratio: 2/3; object-fit: cover; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 32px 96px rgba(0,0,0,0.8); background: var(--surface2); }
+  .sp-info { max-width: 500px; }
+  .sp-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .sp-eyebrow::before { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+  .sp-title { font-family: 'DM Serif Display', serif; font-size: 3.6rem; line-height: 1.05; margin-bottom: 8px; }
+  .sp-meta { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+  .sp-status { display: inline-flex; align-items: center; gap: 7px; background: rgba(200,169,126,0.1); border: 1px solid rgba(200,169,126,0.28); border-radius: 7px; padding: 6px 14px; font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 20px; }
+  .sp-overview { font-size: 13px; color: var(--muted); line-height: 1.75; margin-bottom: 20px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .sp-cast { display: flex; gap: 10px; align-items: center; }
+  .sp-cast-label { font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-right: 4px; }
+  .sp-cast img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); background: var(--surface2); }
+
+  /* ══ SCREEN 4: IDLE ══ */
+  #screen-idle { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: var(--bg); }
+  .idle-clock { font-family: 'DM Serif Display', serif; font-size: 9rem; line-height: 1; color: rgba(232,228,220,0.06); letter-spacing: -0.04em; margin-bottom: 8px; }
+  .idle-label { font-size: 11px; color: var(--muted2); letter-spacing: .15em; text-transform: uppercase; }
+  .idle-posters { display: flex; gap: 12px; margin-top: 28px; }
+  .idle-posters img { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; opacity: 0.12; border: 1px solid var(--border); background: var(--surface2); }
+
+  /* ══ STATUS BAR ══ */
+  .status-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 20px;
+    background: linear-gradient(transparent, rgba(9,9,16,0.7));
+    pointer-events: none;
+  }
+  .status-dots { display: flex; gap: 5px; align-items: center; }
+  .sdot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); transition: all .3s; }
+  .sdot.active { background: var(--accent); width: 14px; border-radius: 3px; }
+  .status-services { display: flex; gap: 8px; }
+  .svc { font-size: 9px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; opacity: 0.5; }
+  .svc.on { opacity: 1; background: rgba(90,224,122,.1); color: var(--green); border: 1px solid rgba(90,224,122,.2); }
+  .svc.off { color: var(--muted2); }
+
+  .ambient { position: fixed; inset: 0; background: radial-gradient(ellipse 60% 40% at 20% 80%, rgba(200,169,126,0.04) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<div class="screen-container">
+  <div class="wipe-overlay" id="wipeOverlay"></div>
+  <div class="fade-overlay" id="fadeOverlay"></div>
+
+  <!-- ══ NOW PLAYING ══ -->
+  <div class="screen active" id="screen-nowplaying">
+    <div class="cin-bg" id="npBg"></div>
+    <div class="cin-vignette"></div>
+    <div class="np-content">
+      <div class="np-poster-wrap">
+        <div class="np-live"><span class="live-dot"></span><span id="npLiveLabel">Now Playing</span></div>
+        <img class="np-poster" id="npPoster" src="" alt="">
+        <div class="np-quality" id="npQuality" style="display:none"></div>
+      </div>
+      <div class="np-info">
+        <div class="np-eyebrow">Now Watching</div>
+        <div class="np-title" id="npTitle">—</div>
+        <div class="np-meta" id="npMeta"></div>
+        <div class="np-progress">
+          <div class="np-prog-track"><div class="np-prog-fill" id="npProg" style="width:0%"></div></div>
+          <div class="np-prog-times"><span id="npElapsed">0:00:00</span><span id="npDuration">0:00:00</span></div>
+        </div>
+        <div class="np-watcher">
+          <div class="np-avatar" id="npAvatar">?</div>
+          <span style="color:var(--text);font-weight:500" id="npUser">—</span>
+          <span>·</span>
+          <span id="npDevice">—</span>
+        </div>
+        <div class="np-ratings" id="npRatings"></div>
+        <div class="np-overview" id="npOverview"></div>
+        <div class="np-bottom">
+          <div id="npCastWrap" style="display:none">
+            <div class="np-cast-label">Cast</div>
+            <div class="np-cast-row" id="npCast"></div>
+          </div>
+          <div class="np-file" id="npFile" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ UPCOMING ══ -->
+  <div class="screen" id="screen-upcoming">
+    <div class="uh">
+      <h1>Coming Up</h1>
+      <p id="upcomingSubtitle">Your library · Radarr queue · Jellyseerr requests</p>
+    </div>
+    <div class="big-grid" id="upcomingGrid"></div>
+  </div>
+
+  <!-- ══ SPOTLIGHT ══ -->
+  <div class="screen" id="screen-spotlight">
+    <div class="cin-bg" id="spBg"></div>
+    <div class="cin-vignette"></div>
+    <div class="sp-content">
+      <img class="sp-poster" id="spPoster" src="" alt="">
+      <div class="sp-info">
+        <div class="sp-eyebrow" id="spEyebrow">Arriving Soon</div>
+        <div class="sp-title" id="spTitle">—</div>
+        <div class="sp-meta" id="spMeta"></div>
+        <div class="sp-status" id="spStatus"></div>
+        <div class="sp-overview" id="spOverview"></div>
+        <div class="sp-cast" id="spCast" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ IDLE ══ -->
+  <div class="screen" id="screen-idle">
+    <div class="idle-clock" id="idleClock">--:--</div>
+    <div class="idle-label">Nothing playing</div>
+    <div class="idle-posters" id="idlePosters"></div>
+  </div>
+</div>
+
+<!-- Status bar -->
+<div class="status-bar">
+  <div class="status-dots" id="statusDots"></div>
+  <div class="status-services" id="statusServices"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+const SCREENS = ['screen-nowplaying', 'screen-upcoming', 'screen-spotlight', 'screen-idle'];
+let current = 3; // start idle
+let locked = false; // locked to now-playing when someone is watching
+let screenTimer = null;
+let pollTimer = null;
+let screenDuration = 15000;
+let pollInterval = 5000;
+let state = null;
+let animMode = 'fade';
+let progressTimer = null;
+let localPositionMs = 0;
+let localDurationMs = 0;
+
+const screenEls = SCREENS.map(id => document.getElementById(id));
+const fadeEl = document.getElementById('fadeOverlay');
+const wipeEl = document.getElementById('wipeOverlay');
+
+// ══════════════════════════════════════════════════════
+//  TIME HELPERS
+// ══════════════════════════════════════════════════════
+function fmtMs(ms) {
+  if (!ms || ms < 0) return '0:00:00';
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('idleClock').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock, 15000);
+
+// ══════════════════════════════════════════════════════
+//  TRANSITIONS
+// ══════════════════════════════════════════════════════
+function goTo(idx, force = false) {
+  if (!force && idx === current) return;
+  const from = current; current = idx;
+  updateDots();
+  if (animMode === 'slide') doSlide(from, idx);
+  else if (animMode === 'wipe') doWipe(from, idx);
+  else doFade(from, idx);
+}
+
+function doFade(from, to) {
+  fadeEl.style.transition = 'none'; fadeEl.style.opacity = '0'; fadeEl.offsetHeight;
+  fadeEl.style.transition = 'opacity 0.45s ease'; fadeEl.style.opacity = '1';
+  setTimeout(() => {
+    screenEls[from].classList.remove('active');
+    screenEls[to].classList.add('active');
+    fadeEl.style.transition = 'opacity 0.55s ease'; fadeEl.style.opacity = '0';
+  }, 450);
+}
+
+function doSlide(from, to) {
+  const dir = to > from ? 1 : -1;
+  const inc = screenEls[to], out = screenEls[from];
+  inc.style.transform = `translateX(${dir*100}%)`; inc.style.transition = 'none';
+  inc.classList.add('active'); inc.offsetHeight;
+  inc.style.transition = 'transform 0.55s cubic-bezier(0.4,0,0.2,1)';
+  out.style.transition = 'transform 0.55s cubic-bezier(0.4,0,0.2,1)';
+  inc.style.transform = 'translateX(0)'; out.style.transform = `translateX(${-dir*100}%)`;
+  setTimeout(() => {
+    out.classList.remove('active'); out.style.transform = ''; out.style.transition = ''; inc.style.transition = '';
+  }, 560);
+}
+
+function doWipe(from, to) {
+  wipeEl.style.transition = 'none'; wipeEl.style.transform = 'translateX(-101%)'; wipeEl.offsetHeight;
+  wipeEl.style.transition = 'transform 0.4s cubic-bezier(0.4,0,0.2,1)'; wipeEl.style.transform = 'translateX(0)';
+  setTimeout(() => {
+    screenEls[from].classList.remove('active'); screenEls[to].classList.add('active');
+    wipeEl.style.transition = 'transform 0.4s cubic-bezier(0.4,0,0.2,1)'; wipeEl.style.transform = 'translateX(101%)';
+  }, 410);
+  setTimeout(() => { wipeEl.style.transition = 'none'; wipeEl.style.transform = 'translateX(-101%)'; }, 820);
+}
+
+// ══════════════════════════════════════════════════════
+//  ROTATION
+// ══════════════════════════════════════════════════════
+function getRotation(s) {
+  // Build list of screens to rotate through based on available data
+  const list = [];
+  if (s.nowPlaying) list.push(0); // now playing
+  const hasUpcoming = (s.downloading?.length || s.requested?.length || s.available?.length);
+  if (hasUpcoming) list.push(1); // upcoming
+  const hasSpotlight = !!s.spotlight;
+  if (hasSpotlight) list.push(2); // spotlight
+  if (list.length === 0) list.push(3); // idle
+  return list;
+}
+
+function startRotation() {
+  clearTimeout(screenTimer);
+  if (locked) return;
+  screenTimer = setTimeout(() => {
+    if (locked || !state) return;
+    const rotation = getRotation(state);
+    const idx = rotation.indexOf(current);
+    const next = rotation[(idx + 1) % rotation.length];
+    goTo(next);
+    startRotation();
+  }, screenDuration);
+}
+
+// ══════════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════════
+function renderNowPlaying(np) {
+  if (!np) return;
+  // Poster + background
+  if (np.posterUrl) {
+    document.getElementById('npPoster').src = np.posterUrl;
+    document.getElementById('npBg').style.backgroundImage = `url('${np.backdropUrl || np.posterUrl}')`;
+  }
+  document.getElementById('npTitle').textContent = np.title || '—';
+
+  // Meta line
+  const parts = [np.year, np.officialRating, np.genres].filter(Boolean);
+  if (np.meta?.director) parts.splice(1, 0, np.meta.director);
+  if (np.meta?.runtime) parts.push(`${Math.floor(np.meta.runtime / 60)}h ${np.meta.runtime % 60}m`);
+  document.getElementById('npMeta').textContent = parts.join(' · ');
+
+  // Progress
+  localPositionMs = np.positionMs || 0;
+  localDurationMs = np.durationMs || 0;
+  document.getElementById('npProg').style.width = (np.progressPct || 0) + '%';
+  document.getElementById('npElapsed').textContent = fmtMs(localPositionMs);
+  document.getElementById('npDuration').textContent = fmtMs(localDurationMs);
+
+  // Watcher
+  document.getElementById('npUser').textContent = np.userName || '—';
+  document.getElementById('npDevice').textContent = np.deviceName || '—';
+  document.getElementById('npAvatar').textContent = (np.userName || '?')[0].toUpperCase();
+
+  // Ratings
+  const ratingsEl = document.getElementById('npRatings');
+  ratingsEl.innerHTML = '';
+  const cr = np.communityRating || np.meta?.voteAverage;
+  if (cr) ratingsEl.innerHTML += `<div class="np-rpill"><span style="color:#f5c518">★</span><span>${cr}</span><span class="rl">Rating</span></div>`;
+
+  // Overview
+  document.getElementById('npOverview').textContent = np.overview || np.meta?.tagline || '';
+
+  // Quality badge
+  const qEl = document.getElementById('npQuality');
+  if (np.fileDetails) {
+    const fd = np.fileDetails;
+    const parts = [fd.resolution, fd.hdr, fd.audioCodec].filter(Boolean);
+    if (parts.length) { qEl.textContent = parts.join(' · '); qEl.style.display = ''; }
+    else qEl.style.display = 'none';
+  } else qEl.style.display = 'none';
+
+  // File chips
+  const fileEl = document.getElementById('npFile');
+  if (np.fileDetails) {
+    const fd = np.fileDetails;
+    fileEl.style.display = '';
+    fileEl.innerHTML = [
+      fd.resolution ? `<div class="np-fchip"><span class="fl">Resolution</span><span class="fv">${fd.resolution}</span></div>` : '',
+      fd.videoCodec ? `<div class="np-fchip"><span class="fl">Video</span><span class="fv">${fd.videoCodec}${fd.hdr ? ' / ' + fd.hdr : ''}</span></div>` : '',
+      fd.audioCodec ? `<div class="np-fchip"><span class="fl">Audio</span><span class="fv">${fd.audioCodec}</span></div>` : '',
+      fd.size ? `<div class="np-fchip"><span class="fl">File Size</span><span class="fv">${fd.size}</span></div>` : '',
+    ].join('');
+  } else fileEl.style.display = 'none';
+
+  // Cast
+  const castEl = document.getElementById('npCast');
+  const castWrap = document.getElementById('npCastWrap');
+  if (np.meta?.cast?.length) {
+    castWrap.style.display = '';
+    castEl.innerHTML = np.meta.cast.map(c => `
+      <div class="np-cast-item">
+        <img src="${c.profileUrl || ''}" alt="${c.name}" onerror="this.style.opacity=0">
+        <span>${c.name.split(' ')[0]}<br>${c.name.split(' ').slice(1).join(' ')}</span>
+      </div>`).join('');
+  } else castWrap.style.display = 'none';
+}
+
+function renderUpcoming(s) {
+  const grid = document.getElementById('upcomingGrid');
+  const items = [];
+
+  (s.downloading || []).forEach(d => items.push({
+    title: d.title, year: '', posterUrl: null,
+    status: 'downloading', label: `${d.pct}% ↓`, rating: null,
+  }));
+  (s.available || []).slice(0, 6).forEach(m => items.push({
+    title: m.title, year: m.year, posterUrl: m.posterUrl,
+    status: 'available', label: 'Available', rating: m.imdbRating,
+  }));
+  (s.requested || []).slice(0, 6).forEach(r => items.push({
+    title: r.title, year: r.year, posterUrl: r.posterUrl,
+    status: 'requested', label: 'Requested', rating: null,
+  }));
+
+  const cls = { downloading: 's-dl', available: 's-av', requested: 's-rq' };
+  grid.innerHTML = items.slice(0, 12).map(item => `
+    <div class="big-card">
+      <div class="bpw">
+        <img class="bp" src="${item.posterUrl || ''}" alt="${item.title}" onerror="this.style.opacity=0.3">
+        <div class="bcs ${cls[item.status]}">${item.label}</div>
+        ${item.rating ? `<div class="bcr">★${item.rating}</div>` : ''}
+      </div>
+      <div class="bt">${item.title}</div>
+      <div class="bm">${item.year || ''}</div>
+    </div>`).join('');
+
+  // Update subtitle
+  const svcs = [];
+  if (s.services?.radarr) svcs.push('Radarr');
+  if (s.services?.sonarr) svcs.push('Sonarr');
+  if (s.services?.overseerr) svcs.push('Jellyseerr');
+  document.getElementById('upcomingSubtitle').textContent =
+    svcs.length ? `Your library · ${svcs.join(' · ')}` : 'Your library';
+}
+
+function renderSpotlight(s) {
+  const sp = s.spotlight;
+  if (!sp) return;
+  document.getElementById('spTitle').textContent = sp.title || '—';
+  document.getElementById('spMeta').textContent = [sp.year, sp.source === 'radarr' ? 'Movie' : 'TV'].filter(Boolean).join(' · ');
+  document.getElementById('spStatus').innerHTML = `↓ Downloading &mdash; ${sp.pct}% complete`;
+  document.getElementById('spOverview').textContent = '';
+  if (sp.posterUrl) {
+    document.getElementById('spPoster').src = sp.posterUrl;
+    document.getElementById('spBg').style.backgroundImage = `url('${sp.posterUrl}')`;
+  }
+  document.getElementById('spCast').style.display = 'none';
+}
+
+function renderIdle(s) {
+  const postersEl = document.getElementById('idlePosters');
+  const allPosters = [
+    ...(s.available || []).map(m => m.posterUrl),
+    ...(s.requested || []).map(r => r.posterUrl),
+  ].filter(Boolean).slice(0, 7);
+  postersEl.innerHTML = allPosters.map(url => `<img src="${url}" alt="">`).join('');
+}
+
+function updateDots() {
+  const dotsEl = document.getElementById('statusDots');
+  // Figure out which dots to show
+  const rotation = state ? getRotation(state) : [3];
+  dotsEl.innerHTML = rotation.map((screenIdx, i) => {
+    const active = screenIdx === current;
+    return `<div class="sdot${active ? ' active' : ''}"></div>`;
+  }).join('');
+}
+
+function updateServices(services) {
+  const el = document.getElementById('statusServices');
+  const svcs = ['jellyfin', 'radarr', 'sonarr', 'overseerr'];
+  el.innerHTML = svcs.map(s => `<div class="svc ${services?.[s] ? 'on' : 'off'}">${s}</div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  LOCAL PROGRESS TICK
+// ══════════════════════════════════════════════════════
+function startProgressTick() {
+  clearInterval(progressTimer);
+  progressTimer = setInterval(() => {
+    if (!state?.nowPlaying || state.nowPlaying.isPaused) return;
+    localPositionMs = Math.min(localPositionMs + 1000, localDurationMs);
+    const pct = localDurationMs > 0 ? (localPositionMs / localDurationMs) * 100 : 0;
+    document.getElementById('npProg').style.width = pct + '%';
+    document.getElementById('npElapsed').textContent = fmtMs(localPositionMs);
+  }, 1000);
+}
+
+// ══════════════════════════════════════════════════════
+//  POLL
+// ══════════════════════════════════════════════════════
+async function poll() {
+  try {
+    const res = await fetch('/api/state');
+    if (!res.ok) return;
+    const newState = await res.json();
+
+    const wasPlaying = !!state?.nowPlaying;
+    const isPlaying = !!newState.nowPlaying;
+    state = newState;
+
+    screenDuration = (state.config?.screenDuration || 15) * 1000;
+    pollInterval = (state.config?.pollInterval || 5) * 1000;
+
+    // Determine animation from config or randomise nicely
+    const anims = ['fade', 'slide', 'wipe'];
+    animMode = anims[Math.floor(Date.now() / 1000 / (state.config?.screenDuration || 15)) % 3];
+
+    if (isPlaying) {
+      renderNowPlaying(state.nowPlaying);
+      startProgressTick();
+      if (!wasPlaying || !locked) {
+        locked = true;
+        clearTimeout(screenTimer);
+        goTo(0);
+      }
+    } else {
+      clearInterval(progressTimer);
+      if (wasPlaying && locked) {
+        // Playback just stopped — unlock and start rotation
+        locked = false;
+        goTo(state.spotlight ? 2 : (state.available?.length ? 1 : 3));
+        startRotation();
+      } else if (!locked) {
+        renderUpcoming(state);
+        renderSpotlight(state);
+        renderIdle(state);
+        if (!screenTimer) startRotation();
+      }
+    }
+
+    renderUpcoming(state);
+    renderSpotlight(state);
+    renderIdle(state);
+    updateDots();
+    updateServices(state.services);
+
+  } catch (e) {
+    console.warn('[poll]', e.message);
+  } finally {
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(poll, pollInterval);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════════════
+// Start on idle, then poll
+goTo(3, true);
+poll();
+</script>
+</body>
+</html>
