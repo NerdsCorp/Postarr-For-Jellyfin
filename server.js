@@ -123,6 +123,7 @@ async function getActiveSessions() {
       ? `${config.jellyfin.url}/Items/${item.Id}/Images/Backdrop/0?maxWidth=1920&quality=80&api_key=${config.jellyfin.apiKey}`
       : null,
     userName: session.UserName || 'Unknown',
+    userId: session.UserId || null,
     deviceName: session.DeviceName || 'Unknown Device',
     client: session.Client || '',
     isPaused: !!state.IsPaused,
@@ -131,21 +132,25 @@ async function getActiveSessions() {
 }
 
 // ── Jellyfin: library fallback (recently added + recently played) ─
-async function getJellyfinLibrary() {
+async function getJellyfinLibrary(userId) {
   if (!config.jellyfin.url || !config.jellyfin.apiKey) return [];
 
-  const [recentlyAdded, recentlyPlayed] = await Promise.all([
-    apiFetch(
-      `${config.jellyfin.url}/Items?SortBy=DateCreated&SortOrder=Descending&IncludeItemTypes=Movie,Series&Recursive=true&Limit=18&Fields=PrimaryImageAspectRatio,Overview,Genres,CommunityRating,OfficialRating,ProductionYear&api_key=${config.jellyfin.apiKey}`,
+  const recentlyAdded = await apiFetch(
+    `${config.jellyfin.url}/Items?SortBy=DateCreated&SortOrder=Descending&IncludeItemTypes=Movie,Series&Recursive=true&Limit=18&Fields=PrimaryImageAspectRatio,Overview,Genres,CommunityRating,OfficialRating,ProductionYear&api_key=${config.jellyfin.apiKey}`,
+    config.jellyfin.apiKey,
+    'Jellyfin'
+  );
+
+  let recentlyPlayed = null;
+  if (userId) {
+    recentlyPlayed = await apiFetch(
+      `${config.jellyfin.url}/Items?SortBy=DatePlayed&SortOrder=Descending&IncludeItemTypes=Movie,Series&Recursive=true&Limit=6&Fields=PrimaryImageAspectRatio,Overview,Genres,CommunityRating,OfficialRating,ProductionYear&Filters=IsPlayed&UserId=${encodeURIComponent(userId)}&api_key=${config.jellyfin.apiKey}`,
       config.jellyfin.apiKey,
       'Jellyfin'
-    ),
-    apiFetch(
-      `${config.jellyfin.url}/Items?SortBy=DatePlayed&SortOrder=Descending&IncludeItemTypes=Movie,Series&Recursive=true&Limit=6&Fields=PrimaryImageAspectRatio,Overview,Genres,CommunityRating,OfficialRating,ProductionYear&Filters=IsPlayed&api_key=${config.jellyfin.apiKey}`,
-      config.jellyfin.apiKey,
-      'Jellyfin'
-    ),
-  ]);
+    );
+  } else {
+    logger.info('[Jellyfin] skipping recently played library fetch because no user ID is available');
+  }
 
   const seen = new Set();
   const items = [
