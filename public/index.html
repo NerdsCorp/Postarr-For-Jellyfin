@@ -10,686 +10,489 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #090910;
-    --surface: #111118;
-    --surface2: #18181f;
-    --border: rgba(255,255,255,0.07);
-    --accent: #c8a97e;
+    --bg:         #090910;
+    --surface:    #111118;
+    --surface2:   #18181f;
+    --border:     rgba(255,255,255,0.07);
+    --accent:     #c8a97e;
     --accent-dim: rgba(200,169,126,0.15);
-    --text: #e8e4dc;
-    --muted: #6b6878;
-    --muted2: #2e2c37;
-    --red: #e05a5a;
-    --green: #5ae07a;
-    --blue: #a0a0f0;
+    --text:       #e8e4dc;
+    --muted:      #6b6878;
+    --muted2:     #2e2c37;
+    --red:        #e05a5a;
+    --green:      #5ae07a;
+    --blue:       #a0a0f0;
+    /* fluid scale */
+    --left-w:      clamp(200px, 21vw, 320px);
+    --poster-h:    clamp(150px, 26vh, 300px);
+    --pad-x:       clamp(10px, 1.4vw, 20px);
+    --pad-y:       clamp(8px,  1.2vh, 18px);
+    --gap:         clamp(6px,  0.9vh, 12px);
+    --fs-xxs:      clamp(7px,  0.65vw, 9px);
+    --fs-xs:       clamp(8px,  0.78vw, 11px);
+    --fs-sm:       clamp(10px, 0.9vw,  13px);
+    --fs-md:       clamp(12px, 1.1vw,  16px);
+    --fs-title:    clamp(1rem, 1.9vw,  1.6rem);
+    --fs-hero:     clamp(1.6rem, 3.5vw, 3.4rem);
+    --radius:      clamp(4px, 0.5vw, 8px);
   }
 
-  html, body { height: 100%; width: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; overflow: hidden; }
-
-  /* ══ SCREEN SYSTEM — use visibility+opacity so screens don't bleed through ══ */
-  .screen-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
-
-  .screen {
-    position: absolute; inset: 0;
-    opacity: 0; visibility: hidden;
-    pointer-events: none;
-    /* NO transition here — transitions are handled in JS per animation type */
-  }
-  .screen.active {
-    opacity: 1; visibility: visible;
-    pointer-events: all;
-  }
-  /* slide helper classes added by JS */
-  .screen.slide-in-right  { transform: translateX(100%);  opacity: 1; visibility: visible; }
-  .screen.slide-in-left   { transform: translateX(-100%); opacity: 1; visibility: visible; }
-  .screen.slide-transitioning { transition: transform 0.55s cubic-bezier(0.4,0,0.2,1); }
-
-  .fade-overlay  { position: fixed; inset: 0; background: var(--bg); opacity: 0; z-index: 100; pointer-events: none; }
-  .wipe-overlay  { position: fixed; inset: 0; background: var(--bg); transform: translateX(-100%); z-index: 100; pointer-events: none; }
-
-  /* ══ SHARED: CINEMATIC BG ══ */
-  .cin-bg {
-    position: absolute; inset: -8%;
-    background-size: cover; background-position: center top;
-    filter: blur(32px) brightness(0.22) saturate(1.4);
-    transform: scale(1.1); z-index: 0;
-  }
-  .cin-vignette {
-    position: absolute; inset: 0; z-index: 1;
-    background:
-      linear-gradient(90deg, rgba(9,9,16,0.97) 30%, rgba(9,9,16,0.55) 62%, rgba(9,9,16,0.2) 100%),
-      linear-gradient(0deg, rgba(9,9,16,0.65) 0%, transparent 40%);
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
   }
 
-  /* ══ SCREEN 1: NOW PLAYING ══ */
-  #screen-nowplaying { overflow: hidden; background: var(--bg); }
-  .np-content {
-    position: relative; z-index: 2;
-    display: flex; align-items: center;
-    height: 100%; padding: 0 72px; gap: 64px;
-  }
-  .np-poster-wrap { flex-shrink: 0; position: relative; margin-top: 20px; }
-  .np-poster {
-    width: 240px; aspect-ratio: 2/3; object-fit: cover;
-    border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 32px 96px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
-    display: block; background: var(--surface2);
-  }
-  .np-live {
-    position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
-    display: flex; align-items: center; gap: 5px;
-    background: rgba(9,9,16,0.82); backdrop-filter: blur(10px);
-    border: 1px solid rgba(200,169,126,0.3); border-radius: 100px;
-    padding: 4px 12px 4px 9px; white-space: nowrap;
-    font-size: 9px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent);
-  }
-  .live-dot { width: 5px; height: 5px; background: var(--red); border-radius: 50%; animation: pulse 1.8s ease-in-out infinite; flex-shrink: 0; }
+  /* ═══ SCREEN SYSTEM ═══ */
+  .sc { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  .screen { position: absolute; inset: 0; opacity: 0; visibility: hidden; pointer-events: none; }
+  .screen.active { opacity: 1; visibility: visible; pointer-events: all; }
+  .fade-ov { position: fixed; inset: 0; background: var(--bg); opacity: 0; z-index: 100; pointer-events: none; }
+  .wipe-ov { position: fixed; inset: 0; background: var(--accent); transform: translateX(-101%); z-index: 100; pointer-events: none; }
+  .ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse 60% 40% at 20% 80%, rgba(200,169,126,0.04) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 80% 20%, rgba(124,106,175,0.03) 0%, transparent 70%); }
+
+  /* ═══ SCREEN 1: NOW PLAYING — v3 split ═══ */
+  #s-np { display: grid; grid-template-columns: var(--left-w) 1fr; background: var(--bg); }
+
+  /* left */
+  .np-left { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .np-pr { position: relative; flex-shrink: 0; }
+  .np-pr img { width: 100%; height: var(--poster-h); object-fit: cover; object-position: top; display: block; }
+  .np-pr::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: clamp(30px,7vh,70px); background: linear-gradient(transparent, var(--surface)); }
+  .np-live { position: absolute; top: clamp(6px,1vh,10px); left: clamp(6px,1vw,10px); z-index: 2;
+    display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 100px;
+    padding: 3px 8px 3px 6px; font-size: var(--fs-xxs); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+  .live-dot { width: 5px; height: 5px; background: var(--red); border-radius: 50%; flex-shrink: 0; animation: pulse 1.8s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.65)} }
-  .np-quality {
-    position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%);
-    background: rgba(9,9,16,0.82); backdrop-filter: blur(10px);
-    border: 1px solid rgba(200,169,126,0.2); border-radius: 6px;
-    padding: 4px 12px; white-space: nowrap;
-    font-size: 9px; font-weight: 600; letter-spacing: .08em; color: var(--accent);
-  }
-  .np-info { flex: 1; max-width: 560px; }
-  .np-eyebrow {
-    font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--accent); margin-bottom: 14px;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .np-eyebrow::before { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
-  .np-title { font-family: 'DM Serif Display', serif; font-size: 3.6rem; line-height: 1.0; margin-bottom: 8px; }
-  .np-meta { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
-  .np-progress { margin-bottom: 18px; }
-  .np-prog-track { height: 2px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 7px; }
-  .np-prog-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #e8c99a); border-radius: 2px; transition: width 2s linear; }
-  .np-prog-times { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .np-watcher {
-    display: inline-flex; align-items: center; gap: 9px; padding: 7px 14px; margin-bottom: 18px;
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px;
-    font-size: 12px; color: var(--muted);
-  }
-  .np-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg,#7c6aaf,#c8a97e); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; flex-shrink: 0; }
-  .np-ratings { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
-  .np-rpill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 13px; font-size: 13px; font-weight: 600; }
-  .np-rpill .rl { font-size: 9px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
-  .np-overview { font-size: 13px; color: var(--muted); line-height: 1.75; margin-bottom: 22px; max-width: 460px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .np-bottom { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
-  .np-cast-label { font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-bottom: 10px; }
-  .np-cast-row { display: flex; gap: 10px; }
-  .np-cast-item { text-align: center; }
-  .np-cast-item img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255,255,255,0.1); margin-bottom: 4px; display: block; background: var(--surface2); }
-  .np-cast-item span { font-size: 9px; color: var(--muted); display: block; line-height: 1.3; max-width: 44px; }
-  .np-file { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .np-fchip { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07); border-radius: 7px; padding: 6px 10px; }
-  .np-fchip .fl { font-size: 8px; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: block; margin-bottom: 2px; }
-  .np-fchip .fv { font-size: 11px; font-weight: 600; }
+  .np-qb { position: absolute; top: clamp(6px,1vh,10px); right: clamp(6px,1vw,10px); z-index: 2;
+    background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); border: 1px solid rgba(200,169,126,0.3); border-radius: 4px;
+    padding: 2px 7px; font-size: var(--fs-xxs); font-weight: 600; letter-spacing: .08em; color: var(--accent); }
 
-  /* ══ SCREEN 2: UPCOMING ══ */
-  #screen-upcoming { background: var(--bg); display: flex; flex-direction: column; padding: 40px 48px 36px; gap: 22px; }
-  .uh h1 { font-family: 'DM Serif Display', serif; font-size: 2.2rem; font-weight: 400; margin-bottom: 4px; }
-  .uh p { font-size: 12px; color: var(--muted); }
-  .big-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; flex: 1; overflow: hidden; align-content: start; }
-  .big-card { transition: transform .2s; }
-  .big-card:hover { transform: translateY(-4px); }
-  .big-card:hover .bp { border-color: rgba(200,169,126,.4); box-shadow: 0 12px 40px rgba(0,0,0,.5); }
-  .bpw { position: relative; margin-bottom: 9px; }
-  .bp { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 9px; display: block; border: 1px solid var(--border); transition: all .2s; background: var(--surface2); }
-  .bcs { position: absolute; bottom: 8px; left: 7px; font-size: 8px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; }
+  .np-scroll { padding: var(--pad-y) var(--pad-x); flex: 1; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: var(--gap); }
+  .np-scroll::-webkit-scrollbar { display: none; }
+
+  .np-title { font-family: 'DM Serif Display', serif; font-size: var(--fs-title); line-height: 1.15; }
+  .np-meta  { font-size: var(--fs-xxs); color: var(--muted); }
+
+  .np-ratings { display: flex; gap: clamp(3px,0.4vw,6px); flex-wrap: wrap; }
+  .rpill { display: flex; align-items: center; gap: 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px; font-size: var(--fs-xxs); font-weight: 600; }
+  .rpill .rl { font-size: calc(var(--fs-xxs) - 1px); font-weight: 500; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+
+  .prog-track { height: 2px; background: var(--muted2); border-radius: 2px; overflow: hidden; }
+  .prog-fill  { height: 100%; background: linear-gradient(90deg, var(--accent), #e8c99a); border-radius: 2px; transition: width 1s linear; }
+  .prog-times { display: flex; justify-content: space-between; font-size: var(--fs-xxs); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .watcher { display: flex; align-items: center; gap: 7px; padding: clamp(4px,0.7vh,8px) clamp(6px,0.7vw,10px);
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--fs-xxs); color: var(--muted); }
+  .avatar { width: clamp(16px,1.8vh,24px); height: clamp(16px,1.8vh,24px); border-radius: 50%; background: linear-gradient(135deg,#7c6aaf,#c8a97e);
+    display: flex; align-items: center; justify-content: center; font-size: calc(var(--fs-xxs) - 1px); font-weight: 700; color: white; flex-shrink: 0; }
+
+  .file-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(3px,0.4vw,6px); }
+  .fchip { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: clamp(3px,0.5vh,6px) clamp(5px,0.5vw,8px); }
+  .fchip .fl { font-size: calc(var(--fs-xxs) - 1px); color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: block; margin-bottom: 1px; }
+  .fchip .fv { font-size: var(--fs-xxs); font-weight: 600; }
+
+  .overview { font-size: var(--fs-xxs); color: var(--muted); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+  .slabel { font-size: calc(var(--fs-xxs) - 1px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); }
+  .cast-row { display: flex; gap: clamp(4px,0.5vw,8px); overflow-x: auto; scrollbar-width: none; }
+  .cast-row::-webkit-scrollbar { display: none; }
+  .cast-card { flex-shrink: 0; text-align: center; width: clamp(32px,3.2vw,48px); }
+  .cast-card img { width: clamp(28px,2.8vw,42px); height: clamp(28px,2.8vw,42px); border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 3px; border: 1.5px solid var(--border); background: var(--surface2); }
+  .cast-card .cn { font-size: calc(var(--fs-xxs) - 1px); color: var(--muted); line-height: 1.3; }
+
+  /* right */
+  .np-right { display: flex; flex-direction: column; padding: var(--pad-y) var(--pad-x); gap: clamp(7px,1vh,14px); overflow: hidden; }
+  .rh { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .rh h2 { font-family: 'DM Serif Display', serif; font-size: clamp(0.85rem,1.3vw,1.15rem); font-weight: 400; }
+  .rh .sub { font-size: var(--fs-xxs); color: var(--muted); }
+  .tabs { display: flex; gap: 3px; }
+  .tab { font-size: var(--fs-xxs); font-weight: 500; padding: 3px 9px; border-radius: 5px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .15s; }
+  .tab.active { background: var(--accent-dim); color: var(--accent); }
+
+  .ugrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(clamp(72px,7.5vw,120px), 1fr)); gap: clamp(7px,0.9vw,13px); overflow-y: auto; scrollbar-width: none; align-content: start; flex: 1; }
+  .ugrid::-webkit-scrollbar { display: none; }
+  .mc { transition: transform .18s; }
+  .mc:hover { transform: translateY(-3px); }
+  .mc:hover .cp { border-color: rgba(200,169,126,.4); }
+  .cpw { position: relative; margin-bottom: clamp(3px,0.5vh,6px); }
+  .cp { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: var(--radius); display: block; border: 1px solid var(--border); transition: border-color .18s; background: var(--surface2); }
+  .cs { position: absolute; bottom: 5px; left: 5px; font-size: calc(var(--fs-xxs) - 1px); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 5px; border-radius: 3px; }
   .s-av { background: rgba(90,224,122,.15); color: var(--green); border: 1px solid rgba(90,224,122,.3); }
   .s-dl { background: rgba(200,169,126,.15); color: var(--accent); border: 1px solid rgba(200,169,126,.3); }
   .s-rq { background: rgba(100,100,200,.15); color: var(--blue); border: 1px solid rgba(100,100,200,.3); }
-  .bcr { position: absolute; top: 7px; right: 7px; background: rgba(0,0,0,.72); backdrop-filter: blur(4px); border-radius: 3px; padding: 2px 5px; font-size: 8px; font-weight: 700; color: #f5c518; }
-  .bt { font-size: 13px; font-weight: 500; margin-bottom: 2px; line-height: 1.3; }
-  .bm { font-size: 10px; color: var(--muted); }
+  .cr { position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); border-radius: 3px; padding: 1px 4px; font-size: calc(var(--fs-xxs) - 1px); font-weight: 700; color: #f5c518; }
+  .ct { font-size: var(--fs-xs); font-weight: 500; line-height: 1.3; margin-bottom: 1px; }
+  .cm { font-size: var(--fs-xxs); color: var(--muted); }
 
-  /* ══ SCREEN 3: SPOTLIGHT ══ */
-  #screen-spotlight { overflow: hidden; background: var(--bg); }
-  .sp-content { position: relative; z-index: 2; display: flex; align-items: center; height: 100%; padding: 0 72px; gap: 64px; }
-  .sp-poster { width: 220px; flex-shrink: 0; aspect-ratio: 2/3; object-fit: cover; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 32px 96px rgba(0,0,0,0.8); background: var(--surface2); }
-  .sp-info { max-width: 500px; }
-  .sp-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
-  .sp-eyebrow::before { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
-  .sp-title { font-family: 'DM Serif Display', serif; font-size: 3.4rem; line-height: 1.05; margin-bottom: 8px; }
-  .sp-meta { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
-  .sp-status { display: inline-flex; align-items: center; gap: 7px; background: rgba(200,169,126,0.1); border: 1px solid rgba(200,169,126,0.28); border-radius: 7px; padding: 6px 14px; font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 20px; }
-  .sp-overview { font-size: 13px; color: var(--muted); line-height: 1.75; margin-bottom: 20px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  /* ═══ SCREEN 2: UPCOMING ═══ */
+  #s-up { background: var(--bg); display: flex; flex-direction: column; padding: clamp(22px,3.5vh,48px) clamp(22px,3.5vw,52px) clamp(18px,2.5vh,36px); gap: clamp(14px,2vh,26px); }
+  #s-up h1 { font-family: 'DM Serif Display', serif; font-size: clamp(1.3rem,2.8vw,2.3rem); font-weight: 400; margin-bottom: 4px; }
+  #s-up .sub { font-size: var(--fs-xs); color: var(--muted); }
+  .big-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: clamp(10px,1.4vw,18px); flex: 1; overflow: hidden; align-content: start; }
+  .big-card { transition: transform .2s; }
+  .big-card:hover { transform: translateY(-4px) scale(1.02); }
+  .big-card:hover .bp { border-color: rgba(200,169,126,.5); box-shadow: 0 8px 32px rgba(0,0,0,.5); }
+  .bst { position: relative; margin-bottom: clamp(5px,0.8vh,9px); }
+  .bp { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: var(--radius); display: block; border: 1px solid var(--border); background: var(--surface2); transition: all .2s; }
+  .bb { position: absolute; bottom: clamp(5px,0.8vh,9px); left: clamp(5px,0.5vw,8px); font-size: calc(var(--fs-xxs) - 1px); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; }
+  .br { position: absolute; top: clamp(5px,0.8vh,8px); right: clamp(5px,0.5vw,8px); background: rgba(0,0,0,.72); backdrop-filter: blur(4px); border-radius: 3px; padding: 2px 5px; font-size: calc(var(--fs-xxs) - 1px); font-weight: 700; color: #f5c518; }
+  .bt { font-size: var(--fs-xs); font-weight: 500; margin-bottom: 2px; line-height: 1.3; }
+  .bm { font-size: var(--fs-xxs); color: var(--muted); }
 
-  /* ══ SCREEN 4: IDLE ══ */
-  #screen-idle { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: var(--bg); }
-  .idle-clock { font-family: 'DM Serif Display', serif; font-size: 9rem; line-height: 1; color: rgba(232,228,220,0.06); letter-spacing: -0.04em; margin-bottom: 8px; }
-  .idle-label { font-size: 11px; color: var(--muted2); letter-spacing: .15em; text-transform: uppercase; }
-  .idle-posters { display: flex; gap: 12px; margin-top: 28px; }
-  .idle-posters img { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; opacity: 0.12; border: 1px solid var(--border); background: var(--surface2); }
+  /* ═══ SCREEN 3: SPOTLIGHT ═══ */
+  #s-sp { position: relative; overflow: hidden; background: var(--bg); }
+  .sp-bg { position: absolute; inset: -10%; background-size: cover; background-position: center; filter: blur(28px) brightness(0.25) saturate(1.3); transform: scale(1.1); z-index: 0; }
+  .sp-grad { position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(9,9,16,0.97) 35%, rgba(9,9,16,0.6) 65%, rgba(9,9,16,0.2) 100%); }
+  .sp-body { position: relative; z-index: 2; display: flex; align-items: center; height: 100%; padding: 0 clamp(28px,5.5vw,72px); gap: clamp(24px,4.5vw,60px); }
+  .sp-poster { width: clamp(110px,13vw,230px); flex-shrink: 0; aspect-ratio: 2/3; object-fit: cover; border-radius: clamp(7px,0.7vw,12px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 24px 80px rgba(0,0,0,0.7); background: var(--surface2); }
+  .sp-info { max-width: clamp(260px,38vw,500px); }
+  .sp-eyebrow { font-size: var(--fs-xxs); font-weight: 600; letter-spacing: .15em; text-transform: uppercase; color: var(--accent); margin-bottom: clamp(8px,1.1vh,14px); display: flex; align-items: center; gap: 8px; }
+  .sp-eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: var(--accent); }
+  .sp-title { font-family: 'DM Serif Display', serif; font-size: var(--fs-hero); line-height: 1.05; margin-bottom: clamp(4px,0.6vh,9px); }
+  .sp-meta  { font-size: var(--fs-xs); color: var(--muted); margin-bottom: clamp(9px,1.3vh,18px); letter-spacing: .03em; }
+  .sp-status { display: inline-flex; align-items: center; gap: 6px; background: rgba(200,169,126,0.12); border: 1px solid rgba(200,169,126,0.3); border-radius: 6px; padding: clamp(4px,0.6vh,7px) clamp(9px,0.9vw,14px); font-size: var(--fs-xs); font-weight: 600; color: var(--accent); margin-bottom: clamp(9px,1.3vh,18px); }
+  .sp-rats { display: flex; gap: clamp(6px,0.7vw,11px); margin-bottom: clamp(9px,1.3vh,18px); flex-wrap: wrap; }
+  .sp-rpill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; padding: clamp(4px,0.6vh,7px) clamp(8px,0.8vw,13px); font-size: clamp(10px,1vw,13px); font-weight: 600; }
+  .sp-rpill .srl { font-size: var(--fs-xxs); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .sp-overview { font-size: var(--fs-xs); color: var(--muted); line-height: 1.7; margin-bottom: clamp(9px,1.3vh,20px); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .sp-cast { display: flex; gap: clamp(6px,0.7vw,11px); align-items: center; flex-wrap: wrap; }
+  .sp-cast-label { font-size: var(--fs-xxs); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-right: 4px; }
+  .sp-cast img { width: clamp(26px,2.5vw,38px); height: clamp(26px,2.5vw,38px); border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.12); background: var(--surface2); }
 
-  /* ══ STATUS BAR ══ */
-  .status-bar {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 20px;
-    background: linear-gradient(transparent, rgba(9,9,16,0.6));
-    pointer-events: none;
-  }
-  .status-dots { display: flex; gap: 5px; align-items: center; }
-  .sdot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); transition: all .3s; }
-  .sdot.active { background: var(--accent); width: 14px; border-radius: 3px; }
-  .status-services { display: flex; gap: 8px; }
-  .svc { font-size: 9px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; }
-  .svc.on  { background: rgba(90,224,122,.1); color: var(--green); border: 1px solid rgba(90,224,122,.2); }
-  .svc.off { color: var(--muted2); }
+  /* ═══ SCREEN 4: IDLE ═══ */
+  #s-idle { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--bg); }
+  .idle-clock { font-family: 'DM Serif Display', serif; font-size: clamp(4rem,11vw,8rem); line-height: 1; color: rgba(232,228,220,0.07); letter-spacing: -0.04em; margin-bottom: 8px; }
+  .idle-label { font-size: var(--fs-xxs); color: var(--muted2); letter-spacing: .15em; text-transform: uppercase; }
+  .idle-posters { display: flex; gap: clamp(7px,0.9vw,13px); margin-top: clamp(14px,2.5vh,28px); }
+  .idle-posters img { width: clamp(40px,4.2vw,66px); aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; opacity: 0.15; border: 1px solid var(--border); background: var(--surface2); }
+
+  /* ═══ PAGE DOTS ═══ */
+  .pdots { position: fixed; bottom: clamp(8px,1.5vh,16px); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; align-items: center; z-index: 50; pointer-events: none; }
+  .pdot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); transition: all .3s; }
+  .pdot.active { background: var(--accent); width: 14px; border-radius: 3px; }
 </style>
 </head>
 <body>
+<div class="ambient"></div>
+<div class="pdots" id="pdots"></div>
+<div class="sc">
+  <div class="wipe-ov" id="wipeOv"></div>
+  <div class="fade-ov" id="fadeOv"></div>
 
-<div class="screen-container">
-  <div class="wipe-overlay" id="wipeOverlay"></div>
-  <div class="fade-overlay" id="fadeOverlay"></div>
-
-  <!-- ══ SCREEN 1: NOW PLAYING ══ -->
-  <div class="screen" id="screen-nowplaying">
-    <div class="cin-bg" id="npBg"></div>
-    <div class="cin-vignette"></div>
-    <div class="np-content">
-      <div class="np-poster-wrap">
-        <div class="np-live"><span class="live-dot"></span><span>Now Playing</span></div>
-        <img class="np-poster" id="npPoster" src="" alt="">
-        <div class="np-quality" id="npQuality" style="display:none"></div>
+  <!-- ═══ NOW PLAYING ═══ -->
+  <div class="screen active" id="s-np">
+    <div class="np-left">
+      <div class="np-pr">
+        <div class="np-live"><span class="live-dot"></span>Now Playing</div>
+        <div class="np-qb" id="npQb" style="display:none"></div>
+        <img id="npPoster" src="" alt="">
       </div>
-      <div class="np-info">
-        <div class="np-eyebrow">Now Watching</div>
-        <div class="np-title" id="npTitle">—</div>
-        <div class="np-meta" id="npMeta"></div>
-        <div class="np-progress">
-          <div class="np-prog-track"><div class="np-prog-fill" id="npProg" style="width:0%"></div></div>
-          <div class="np-prog-times"><span id="npElapsed">0:00:00</span><span id="npDuration">0:00:00</span></div>
+      <div class="np-scroll">
+        <div><div class="np-title" id="npTitle">—</div><div class="np-meta" id="npMeta"></div></div>
+        <div class="np-ratings" id="npRats"></div>
+        <div>
+          <div class="prog-track"><div class="prog-fill" id="npProg" style="width:0%"></div></div>
+          <div class="prog-times"><span id="npElapsed">0:00:00</span><span id="npDur">0:00:00</span></div>
         </div>
-        <div class="np-watcher">
-          <div class="np-avatar" id="npAvatar">?</div>
-          <span style="color:var(--text);font-weight:500" id="npUser">—</span>
-          <span>·</span>
-          <span id="npDevice">—</span>
-        </div>
-        <div class="np-ratings" id="npRatings"></div>
-        <div class="np-overview" id="npOverview"></div>
-        <div class="np-bottom">
-          <div id="npCastWrap" style="display:none">
-            <div class="np-cast-label">Cast</div>
-            <div class="np-cast-row" id="npCast"></div>
+        <div class="watcher">
+          <div class="avatar" id="npAv">?</div>
+          <div style="flex:1;min-width:0">
+            <div style="color:var(--text);font-weight:600;font-size:var(--fs-xxs)" id="npUser">—</div>
+            <div id="npDev">—</div>
           </div>
-          <div class="np-file" id="npFile" style="display:none"></div>
+          <span style="opacity:.35;font-size:var(--fs-sm)">📺</span>
+        </div>
+        <div class="file-grid" id="npFile" style="display:none"></div>
+        <div class="overview" id="npOv"></div>
+        <div id="npCastWrap" style="display:none">
+          <div class="slabel" style="margin-bottom:clamp(4px,0.5vh,7px)">Top Cast</div>
+          <div class="cast-row" id="npCast"></div>
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- ══ SCREEN 2: UPCOMING ══ -->
-  <div class="screen" id="screen-upcoming">
-    <div class="uh">
-      <h1>Coming Up</h1>
-      <p id="upcomingSubtitle">Your library</p>
+    <div class="np-right">
+      <div class="rh">
+        <div><h2>Up Next</h2><div class="sub" id="npSub">Your library</div></div>
+        <div class="tabs">
+          <button class="tab active" data-tab="all">All</button>
+          <button class="tab" data-tab="movies">Movies</button>
+          <button class="tab" data-tab="tv">TV</button>
+        </div>
+      </div>
+      <div class="ugrid" id="npGrid"></div>
     </div>
-    <div class="big-grid" id="upcomingGrid"></div>
   </div>
 
-  <!-- ══ SCREEN 3: SPOTLIGHT ══ -->
-  <div class="screen" id="screen-spotlight">
-    <div class="cin-bg" id="spBg"></div>
-    <div class="cin-vignette"></div>
-    <div class="sp-content">
+  <!-- ═══ UPCOMING ═══ -->
+  <div class="screen" id="s-up">
+    <div><h1>Coming Up</h1><div class="sub" id="upSub">Your library</div></div>
+    <div class="big-grid" id="upGrid"></div>
+  </div>
+
+  <!-- ═══ SPOTLIGHT ═══ -->
+  <div class="screen" id="s-sp">
+    <div class="sp-bg" id="spBg"></div>
+    <div class="sp-grad"></div>
+    <div class="sp-body">
       <img class="sp-poster" id="spPoster" src="" alt="">
       <div class="sp-info">
-        <div class="sp-eyebrow" id="spEyebrow">From Your Library</div>
-        <div class="sp-title" id="spTitle">—</div>
-        <div class="sp-meta" id="spMeta"></div>
-        <div class="sp-status" id="spStatus" style="display:none"></div>
-        <div class="sp-overview" id="spOverview"></div>
+        <div class="sp-eyebrow" id="spEye">From Your Library</div>
+        <div class="sp-title"   id="spTitle">—</div>
+        <div class="sp-meta"    id="spMeta"></div>
+        <div class="sp-status"  id="spStatus" style="display:none"></div>
+        <div class="sp-rats"    id="spRats"></div>
+        <div class="sp-overview" id="spOv"></div>
+        <div class="sp-cast"    id="spCast" style="display:none"></div>
       </div>
     </div>
   </div>
 
-  <!-- ══ SCREEN 4: IDLE ══ -->
-  <div class="screen active" id="screen-idle">
-    <div class="idle-clock" id="idleClock">--:--</div>
+  <!-- ═══ IDLE ═══ -->
+  <div class="screen" id="s-idle">
+    <div class="idle-clock" id="clock">--:--</div>
     <div class="idle-label">Nothing playing</div>
-    <div class="idle-posters" id="idlePosters"></div>
+    <div class="idle-posters" id="idlePosts"></div>
   </div>
-</div>
-
-<!-- Status bar -->
-<div class="status-bar">
-  <div class="status-dots" id="statusDots"></div>
-  <div class="status-services" id="statusServices"></div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════
-//  STATE
-// ══════════════════════════════════════════════════════
-const SCREENS = ['screen-nowplaying','screen-upcoming','screen-spotlight','screen-idle'];
-const screenEls = SCREENS.map(id => document.getElementById(id));
-const fadeEl  = document.getElementById('fadeOverlay');
-const wipeEl  = document.getElementById('wipeOverlay');
+// ─── state ───────────────────────────────────────────────────────
+const IDS     = ['s-np','s-up','s-sp','s-idle'];
+const ELS     = IDS.map(id => document.getElementById(id));
+const fadeOv  = document.getElementById('fadeOv');
+const wipeOv  = document.getElementById('wipeOv');
+let cur=3, locked=false, sTmr=null, pTmr=null, progTmr=null, xing=false, state=null;
+let anim='fade', dur=15000, poll=5000, lPos=0, lDur=0, tab='all';
 
-let current       = 3;   // start on idle
-let locked        = false;
-let screenTimer   = null;
-let pollTimer     = null;
-let progressTimer = null;
-let state         = null;
-let animMode      = 'fade';
-let screenDuration = 15000;
-let pollInterval   = 5000;
-let localPositionMs = 0;
-let localDurationMs = 0;
-let transitioning   = false;
+// ─── clock ───────────────────────────────────────────────────────
+function tick(){const n=new Date();document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
+tick(); setInterval(tick,15000);
 
-// ══════════════════════════════════════════════════════
-//  CLOCK
-// ══════════════════════════════════════════════════════
-function updateClock() {
-  const now = new Date();
-  document.getElementById('idleClock').textContent =
-    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+function fms(ms){if(!ms||ms<=0)return'0:00:00';const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
+
+// ─── transitions ─────────────────────────────────────────────────
+function show(i){ELS.forEach((e,j)=>e.classList.toggle('active',j===i));cur=i;dots();}
+function goTo(i,imm=false){
+  if(i===cur)return;
+  if(imm||xing){show(i);return;}
+  xing=true;
+  if(anim==='slide')slide(cur,i);
+  else if(anim==='wipe')wipe(cur,i);
+  else fade(cur,i);
 }
-updateClock();
-setInterval(updateClock, 15000);
-
-// ══════════════════════════════════════════════════════
-//  TIME FORMAT
-// ══════════════════════════════════════════════════════
-function fmtMs(ms) {
-  if (!ms || ms < 0) return '0:00:00';
-  const s = Math.floor(ms / 1000);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+function fade(f,t){
+  fadeOv.style.cssText='transition:none;opacity:0'; fadeOv.offsetHeight;
+  fadeOv.style.cssText='transition:opacity 0.38s ease;opacity:1';
+  setTimeout(()=>{show(t);fadeOv.style.cssText='transition:opacity 0.42s ease;opacity:0';setTimeout(()=>{xing=false;},430);},390);
 }
-
-// ══════════════════════════════════════════════════════
-//  TRANSITIONS  — only one screen visible at a time
-// ══════════════════════════════════════════════════════
-function showScreen(idx) {
-  screenEls.forEach((el, i) => {
-    el.classList.toggle('active', i === idx);
-  });
-  current = idx;
-  updateDots();
-}
-
-function goTo(idx, immediate = false) {
-  if (idx === current) return;
-  if (immediate || transitioning) { showScreen(idx); return; }
-
-  transitioning = true;
-  const from = current;
-  const to   = idx;
-
-  if (animMode === 'slide') doSlide(from, to);
-  else if (animMode === 'wipe') doWipe(from, to);
-  else doFade(from, to);
-}
-
-function doFade(from, to) {
-  fadeEl.style.transition = 'none';
-  fadeEl.style.opacity    = '0';
-  fadeEl.offsetHeight; // force reflow
-  fadeEl.style.transition = 'opacity 0.4s ease';
-  fadeEl.style.opacity    = '1';
-  setTimeout(() => {
-    showScreen(to);
-    fadeEl.style.transition = 'opacity 0.45s ease';
-    fadeEl.style.opacity    = '0';
-    setTimeout(() => { transitioning = false; }, 460);
-  }, 410);
-}
-
-function doSlide(from, to) {
-  const dir = to > from ? 1 : -1;
-  const inc = screenEls[to];
-  const out = screenEls[from];
-
-  // Place incoming off-screen, make it visible
-  inc.style.transform  = `translateX(${dir * 100}%)`;
-  inc.style.transition = 'none';
-  inc.style.opacity    = '1';
-  inc.style.visibility = 'visible';
+function slide(f,t){
+  const d=t>f?1:-1,inc=ELS[t],out=ELS[f];
+  inc.style.cssText=`transform:translateX(${d*100}%);opacity:1;visibility:visible;transition:none`;
   inc.offsetHeight;
-
-  // Animate both
-  inc.style.transition = 'transform 0.55s cubic-bezier(0.4,0,0.2,1)';
-  out.style.transition = 'transform 0.55s cubic-bezier(0.4,0,0.2,1)';
-  inc.style.transform  = 'translateX(0)';
-  out.style.transform  = `translateX(${-dir * 100}%)`;
-
-  setTimeout(() => {
-    // Reset outgoing
-    out.style.transition  = 'none';
-    out.style.transform   = '';
-    out.style.opacity     = '';
-    out.style.visibility  = '';
-    inc.style.transition  = 'none';
-    inc.style.transform   = '';
-    showScreen(to);
-    transitioning = false;
-  }, 560);
+  inc.style.transition=out.style.transition='transform 0.52s cubic-bezier(0.4,0,0.2,1)';
+  inc.style.transform='translateX(0)'; out.style.transform=`translateX(${-d*100}%)`;
+  setTimeout(()=>{[inc,out].forEach(e=>{e.style.cssText='';});show(t);xing=false;},540);
+}
+function wipe(f,t){
+  wipeOv.style.cssText='transition:none;transform:translateX(-101%)'; wipeOv.offsetHeight;
+  wipeOv.style.transition='transform 0.36s cubic-bezier(0.4,0,0.2,1)'; wipeOv.style.transform='translateX(0)';
+  setTimeout(()=>{show(t);wipeOv.style.transform='translateX(101%)';setTimeout(()=>{wipeOv.style.cssText='transform:translateX(-101%)';xing=false;},370);},370);
 }
 
-function doWipe(from, to) {
-  wipeEl.style.transition = 'none';
-  wipeEl.style.transform  = 'translateX(-101%)';
-  wipeEl.offsetHeight;
-  wipeEl.style.transition = 'transform 0.38s cubic-bezier(0.4,0,0.2,1)';
-  wipeEl.style.transform  = 'translateX(0)';
-  setTimeout(() => {
-    showScreen(to);
-    wipeEl.style.transition = 'transform 0.38s cubic-bezier(0.4,0,0.2,1)';
-    wipeEl.style.transform  = 'translateX(101%)';
-    setTimeout(() => {
-      wipeEl.style.transition = 'none';
-      wipeEl.style.transform  = 'translateX(-101%)';
-      transitioning = false;
-    }, 390);
-  }, 390);
+// ─── rotation ────────────────────────────────────────────────────
+function rot(s){
+  const l=[];
+  if(s.nowPlaying)l.push(0);
+  if(s.downloading?.length||s.requested?.length||s.available?.length)l.push(1);
+  if(s.spotlight)l.push(2);
+  return l.length?l:[3];
+}
+function startRot(){
+  clearTimeout(sTmr); if(locked)return;
+  sTmr=setTimeout(()=>{
+    if(locked||!state)return;
+    const r=rot(state), next=r[(r.indexOf(cur)+1)%r.length];
+    anim=['fade','slide','wipe'][Math.floor(Date.now()/dur)%3];
+    goTo(next); startRot();
+  },dur);
 }
 
-// ══════════════════════════════════════════════════════
-//  ROTATION
-// ══════════════════════════════════════════════════════
-function getRotation(s) {
-  const list = [];
-  if (s.nowPlaying) list.push(0);
-  const hasContent = s.downloading?.length || s.requested?.length || s.available?.length;
-  if (hasContent) list.push(1);
-  if (s.spotlight) list.push(2);
-  if (list.length === 0) list.push(3);
-  return list;
+// ─── dots ─────────────────────────────────────────────────────────
+function dots(){
+  const r=state?rot(state):[3];
+  document.getElementById('pdots').innerHTML=r.map(i=>`<div class="pdot${i===cur?' active':''}"></div>`).join('');
 }
 
-function startRotation() {
-  clearTimeout(screenTimer);
-  if (locked) return;
-  screenTimer = setTimeout(() => {
-    if (locked || !state) return;
-    const rotation = getRotation(state);
-    const idx  = rotation.indexOf(current);
-    const next = rotation[(idx + 1) % rotation.length];
-    // Pick a nice animation each cycle
-    const anims = ['fade', 'slide', 'wipe'];
-    animMode = anims[Math.floor(Date.now() / screenDuration) % anims.length];
-    goTo(next);
-    startRotation();
-  }, screenDuration);
+// ─── render helpers ───────────────────────────────────────────────
+const CLS={downloading:'s-dl',available:'s-av',requested:'s-rq'};
+
+function items(s,t){
+  const all=[
+    ...(s.downloading||[]).map(d=>({title:d.title,year:'',posterUrl:d.posterUrl||null,status:'downloading',label:`${d.pct}%↓`,rating:null,type:'movie'})),
+    ...(s.available||[]).map(m=>({title:m.title,year:m.year,posterUrl:m.posterUrl,status:'available',label:'Available',rating:m.rating||null,type:m.type||'movie'})),
+    ...(s.requested||[]).map(r=>({title:r.title,year:r.year,posterUrl:r.posterUrl,status:'requested',label:'Requested',rating:null,type:r.type||'movie'})),
+  ];
+  if(t==='movies')return all.filter(i=>i.type!=='series');
+  if(t==='tv')return all.filter(i=>i.type==='series');
+  return all;
 }
 
-// ══════════════════════════════════════════════════════
-//  RENDER: NOW PLAYING
-// ══════════════════════════════════════════════════════
-function renderNowPlaying(np) {
-  // Poster + blurred background
-  if (np.posterUrl) {
-    document.getElementById('npPoster').src = np.posterUrl;
-  }
-  const bgUrl = np.backdropUrl || np.posterUrl || '';
-  document.getElementById('npBg').style.backgroundImage = bgUrl ? `url('${bgUrl}')` : '';
+function svcSub(s){
+  const v=[];
+  if(s.services?.radarr)v.push('Radarr');
+  if(s.services?.sonarr)v.push('Sonarr');
+  if(s.services?.seer)v.push('Seer');
+  return v.length?`Your library · ${v.join(' · ')}`:'Your library';
+}
 
-  // Title
-  document.getElementById('npTitle').textContent = np.title || '—';
+function card(item,cls,rCls){
+  return`<div class="${cls}"><div class="${rCls}">
+    <img class="${cls==='mc'?'cp':'bp'}" src="${item.posterUrl||''}" alt="${item.title}" onerror="this.style.opacity=0.15">
+    <div class="${cls==='mc'?'cs':'bb'} ${CLS[item.status]}">${item.label}</div>
+    ${item.rating?`<div class="${cls==='mc'?'cr':'br'}">★${parseFloat(item.rating).toFixed(1)}</div>`:''}
+  </div>
+  <div class="${cls==='mc'?'ct':'bt'}">${item.title}</div>
+  <div class="${cls==='mc'?'cm':'bm'}">${item.year||''}</div></div>`;
+}
 
-  // Meta line — use what Jellyfin gives us directly
-  const metaParts = [];
-  if (np.year)           metaParts.push(np.year);
-  if (np.meta?.director) metaParts.push(np.meta.director);
-  if (np.officialRating) metaParts.push(np.officialRating);
-  if (np.genres)         metaParts.push(np.genres);
-  document.getElementById('npMeta').textContent = metaParts.join(' · ');
+// ─── render: now playing ─────────────────────────────────────────
+function renderNP(np){
+  if(np.posterUrl)document.getElementById('npPoster').src=np.posterUrl;
+  document.getElementById('npTitle').textContent=np.title||'—';
+  document.getElementById('npMeta').textContent=[np.year,np.officialRating,np.genres].filter(Boolean).join(' · ');
 
-  // Progress
-  localPositionMs = np.positionMs || 0;
-  localDurationMs = np.durationMs || 0;
-  const pct = localDurationMs > 0 ? (localPositionMs / localDurationMs) * 100 : 0;
-  document.getElementById('npProg').style.width    = pct + '%';
-  document.getElementById('npElapsed').textContent = fmtMs(localPositionMs);
-  document.getElementById('npDuration').textContent = fmtMs(localDurationMs);
+  // quality badge
+  const qb=document.getElementById('npQb');
+  if(np.fileDetails){const fd=np.fileDetails,p=[fd.resolution,fd.hdr,fd.audioCodec].filter(Boolean);if(p.length){qb.textContent=p.join(' · ');qb.style.display='';}else qb.style.display='none';}
+  else qb.style.display='none';
 
-  // Watcher
-  document.getElementById('npUser').textContent   = np.userName || '—';
-  document.getElementById('npDevice').textContent = np.deviceName || '—';
-  document.getElementById('npAvatar').textContent = (np.userName || '?')[0].toUpperCase();
+  // ratings
+  const re=document.getElementById('npRats'); re.innerHTML='';
+  const sc=np.communityRating||np.meta?.voteAverage;
+  if(sc)re.innerHTML=`<div class="rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sc).toFixed(1)}</span><span class="rl">Rating</span></div>`;
 
-  // Ratings — community rating from Jellyfin, enriched from Seer if available
-  const ratingsEl = document.getElementById('npRatings');
-  ratingsEl.innerHTML = '';
-  const score = np.meta?.voteAverage || np.communityRating;
-  if (score) {
-    ratingsEl.innerHTML += `<div class="np-rpill"><span style="color:#f5c518">★</span><span>${parseFloat(score).toFixed(1)}</span><span class="rl">Rating</span></div>`;
-  }
+  // progress
+  lPos=np.positionMs||0; lDur=np.durationMs||0;
+  const pct=lDur>0?(lPos/lDur)*100:0;
+  document.getElementById('npProg').style.width=pct+'%';
+  document.getElementById('npElapsed').textContent=fms(lPos);
+  document.getElementById('npDur').textContent=fms(lDur);
 
-  // Overview
-  document.getElementById('npOverview').textContent = np.overview || '';
+  // watcher
+  document.getElementById('npUser').textContent=np.userName||'—';
+  document.getElementById('npDev').textContent=np.deviceName||'—';
+  document.getElementById('npAv').textContent=(np.userName||'?')[0].toUpperCase();
 
-  // Quality badge from Radarr
-  const qEl = document.getElementById('npQuality');
-  if (np.fileDetails) {
-    const fd    = np.fileDetails;
-    const parts = [fd.resolution, fd.hdr, fd.audioCodec].filter(Boolean);
-    if (parts.length) { qEl.textContent = parts.join(' · '); qEl.style.display = ''; }
-    else qEl.style.display = 'none';
-  } else {
-    qEl.style.display = 'none';
-  }
-
-  // File chips from Radarr
-  const fileEl = document.getElementById('npFile');
-  if (np.fileDetails) {
-    const fd = np.fileDetails;
-    const chips = [
-      fd.resolution ? `<div class="np-fchip"><span class="fl">Resolution</span><span class="fv">${fd.resolution}</span></div>` : '',
-      fd.videoCodec ? `<div class="np-fchip"><span class="fl">Video</span><span class="fv">${fd.videoCodec}${fd.hdr ? ' / '+fd.hdr : ''}</span></div>` : '',
-      fd.audioCodec ? `<div class="np-fchip"><span class="fl">Audio</span><span class="fv">${fd.audioCodec}</span></div>` : '',
-      fd.size       ? `<div class="np-fchip"><span class="fl">File Size</span><span class="fv">${fd.size}</span></div>` : '',
+  // file chips
+  const fe=document.getElementById('npFile');
+  if(np.fileDetails){
+    const fd=np.fileDetails;
+    const ch=[
+      fd.resolution?`<div class="fchip"><span class="fl">Resolution</span><span class="fv">${fd.resolution}</span></div>`:'',
+      fd.videoCodec?`<div class="fchip"><span class="fl">Video</span><span class="fv">${fd.videoCodec}${fd.hdr?' / '+fd.hdr:''}</span></div>`:'',
+      fd.audioCodec?`<div class="fchip"><span class="fl">Audio</span><span class="fv">${fd.audioCodec}</span></div>`:'',
+      fd.size?`<div class="fchip"><span class="fl">File Size</span><span class="fv">${fd.size}</span></div>`:'',
     ].filter(Boolean).join('');
-    if (chips) { fileEl.innerHTML = chips; fileEl.style.display = ''; }
-    else fileEl.style.display = 'none';
-  } else {
-    fileEl.style.display = 'none';
-  }
+    if(ch){fe.innerHTML=ch;fe.style.display='';}else fe.style.display='none';
+  }else fe.style.display='none';
 
-  // Cast from Seer
-  const castWrap = document.getElementById('npCastWrap');
-  const castEl   = document.getElementById('npCast');
-  if (np.meta?.cast?.length) {
-    castEl.innerHTML = np.meta.cast.map(c => `
-      <div class="np-cast-item">
-        <img src="${c.profileUrl || ''}" alt="${c.name}" onerror="this.style.display='none'">
-        <span>${c.name.split(' ').slice(0,2).join('<br>')}</span>
-      </div>`).join('');
-    castWrap.style.display = '';
-  } else {
-    castWrap.style.display = 'none';
-  }
+  document.getElementById('npOv').textContent=np.overview||'';
+
+  // cast
+  const cw=document.getElementById('npCastWrap'),cr=document.getElementById('npCast');
+  if(np.meta?.cast?.length){
+    cr.innerHTML=np.meta.cast.map(c=>`<div class="cast-card"><img src="${c.profileUrl||''}" alt="${c.name}" onerror="this.style.display='none'"><div class="cn">${c.name.split(' ')[0]}<br>${c.name.split(' ').slice(1).join(' ')}</div></div>`).join('');
+    cw.style.display='';
+  }else cw.style.display='none';
 }
 
-// ══════════════════════════════════════════════════════
-//  RENDER: UPCOMING
-// ══════════════════════════════════════════════════════
-function renderUpcoming(s) {
-  const grid  = document.getElementById('upcomingGrid');
-  const items = [];
-
-  (s.downloading || []).forEach(d => items.push({
-    title: d.title, year: '', posterUrl: d.posterUrl || null,
-    status: 'downloading', label: `${d.pct}% ↓`, rating: null,
-  }));
-  (s.available || []).forEach(m => items.push({
-    title: m.title, year: m.year, posterUrl: m.posterUrl,
-    status: 'available', label: 'Available', rating: m.rating || m.imdbRating || null,
-  }));
-  (s.requested || []).forEach(r => items.push({
-    title: r.title, year: r.year, posterUrl: r.posterUrl,
-    status: 'requested', label: 'Requested', rating: null,
-  }));
-
-  const cls = { downloading: 's-dl', available: 's-av', requested: 's-rq' };
-  grid.innerHTML = items.slice(0, 12).map(item => `
-    <div class="big-card">
-      <div class="bpw">
-        <img class="bp" src="${item.posterUrl || ''}" alt="${item.title}" onerror="this.style.opacity=0.15">
-        <div class="bcs ${cls[item.status]}">${item.label}</div>
-        ${item.rating ? `<div class="bcr">★${parseFloat(item.rating).toFixed(1)}</div>` : ''}
-      </div>
-      <div class="bt">${item.title}</div>
-      <div class="bm">${item.year || ''}</div>
-    </div>`).join('');
-
-  const svcs = [];
-  if (s.services?.radarr) svcs.push('Radarr');
-  if (s.services?.sonarr) svcs.push('Sonarr');
-  if (s.services?.seer)   svcs.push('Seer');
-  document.getElementById('upcomingSubtitle').textContent =
-    svcs.length ? `Your library · ${svcs.join(' · ')}` : 'Your library';
+function renderUpNext(s){
+  const it=items(s,tab);
+  document.getElementById('npGrid').innerHTML=it.slice(0,16).map(i=>card(i,'mc','cpw')).join('');
+  document.getElementById('npSub').textContent=svcSub(s);
 }
 
-// ══════════════════════════════════════════════════════
-//  RENDER: SPOTLIGHT
-// ══════════════════════════════════════════════════════
-function renderSpotlight(s) {
-  const sp = s.spotlight;
-  if (!sp) return;
-
-  document.getElementById('spTitle').textContent = sp.title || '—';
-  const typeLabel = sp.source === 'sonarr' ? 'TV Series' : 'Movie';
-  document.getElementById('spMeta').textContent = [sp.year, typeLabel].filter(Boolean).join(' · ');
-
-  const eyebrow  = sp.status === 'downloading' ? 'Arriving Soon' : sp.status === 'requested' ? 'Requested' : 'From Your Library';
-  document.getElementById('spEyebrow').textContent = eyebrow;
-
-  const statusEl = document.getElementById('spStatus');
-  if (sp.status === 'downloading' && sp.pct != null) {
-    statusEl.innerHTML      = `↓ Downloading &mdash; ${sp.pct}% complete`;
-    statusEl.style.display  = '';
-  } else if (sp.status === 'available') {
-    statusEl.innerHTML      = '✓ In your library';
-    statusEl.style.display  = '';
-  } else {
-    statusEl.style.display  = 'none';
-  }
-
-  document.getElementById('spOverview').textContent = sp.overview || '';
-
-  if (sp.posterUrl) {
-    document.getElementById('spPoster').src = sp.posterUrl;
-    document.getElementById('spBg').style.backgroundImage = `url('${sp.posterUrl}')`;
-  }
+function renderUpcoming(s){
+  const it=items(s,'all');
+  document.getElementById('upGrid').innerHTML=it.slice(0,12).map(i=>card(i,'big-card','bst')).join('');
+  document.getElementById('upSub').textContent=svcSub(s);
 }
 
-// ══════════════════════════════════════════════════════
-//  RENDER: IDLE
-// ══════════════════════════════════════════════════════
-function renderIdle(s) {
-  const postersEl = document.getElementById('idlePosters');
-  const urls = [
-    ...(s.available  || []).map(m => m.posterUrl),
-    ...(s.requested  || []).map(r => r.posterUrl),
-    ...(s.downloading|| []).map(d => d.posterUrl),
-  ].filter(Boolean).slice(0, 7);
-  postersEl.innerHTML = urls.map(url => `<img src="${url}" alt="">`).join('');
+function renderSpotlight(s){
+  const sp=s.spotlight; if(!sp)return;
+  document.getElementById('spTitle').textContent=sp.title||'—';
+  document.getElementById('spMeta').textContent=[sp.year,sp.source==='sonarr'?'TV Series':'Movie'].filter(Boolean).join(' · ');
+  document.getElementById('spEye').textContent=sp.status==='downloading'?'Arriving Soon':sp.status==='requested'?'Requested':'From Your Library';
+  const st=document.getElementById('spStatus');
+  if(sp.status==='downloading'&&sp.pct!=null){st.innerHTML=`↓ Downloading — ${sp.pct}% complete`;st.style.display='';}
+  else if(sp.status==='available'){st.innerHTML='✓ In your library';st.style.display='';}
+  else st.style.display='none';
+  document.getElementById('spOv').textContent=sp.overview||'';
+  if(sp.posterUrl){document.getElementById('spPoster').src=sp.posterUrl;document.getElementById('spBg').style.backgroundImage=`url('${sp.posterUrl}')`;}
+  const re=document.getElementById('spRats'); re.innerHTML='';
+  if(sp.rating)re.innerHTML=`<div class="sp-rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sp.rating).toFixed(1)}</span><span class="srl">Rating</span></div>`;
+  const ce=document.getElementById('spCast');
+  if(sp.cast?.length){ce.innerHTML=`<span class="sp-cast-label">Cast</span>`+sp.cast.map(c=>`<img src="${c.profileUrl||''}" alt="${c.name}" title="${c.name}" onerror="this.style.display='none'">`).join('');ce.style.display='';}
+  else ce.style.display='none';
 }
 
-// ══════════════════════════════════════════════════════
-//  STATUS BAR
-// ══════════════════════════════════════════════════════
-function updateDots() {
-  const dotsEl   = document.getElementById('statusDots');
-  const rotation = state ? getRotation(state) : [3];
-  dotsEl.innerHTML = rotation.map(idx =>
-    `<div class="sdot${idx === current ? ' active' : ''}"></div>`
-  ).join('');
+function renderIdle(s){
+  const urls=[...(s.available||[]),...(s.requested||[]),...(s.downloading||[])].map(i=>i.posterUrl).filter(Boolean).slice(0,7);
+  document.getElementById('idlePosts').innerHTML=urls.map(u=>`<img src="${u}" alt="">`).join('');
 }
 
-function updateServices(services) {
-  const el = document.getElementById('statusServices');
-  el.innerHTML = ['jellyfin','radarr','sonarr','seer'].map(s =>
-    `<div class="svc ${services?.[s] ? 'on' : 'off'}">${s}</div>`
-  ).join('');
+// ─── tabs ────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); tab=b.dataset.tab;
+    if(state)renderUpNext(state);
+  });
+});
+
+// ─── progress tick ───────────────────────────────────────────────
+function startProg(){
+  clearInterval(progTmr);
+  progTmr=setInterval(()=>{
+    if(!state?.nowPlaying||state.nowPlaying.isPaused)return;
+    lPos=Math.min(lPos+1000,lDur);
+    const pct=lDur>0?(lPos/lDur)*100:0;
+    document.getElementById('npProg').style.width=pct+'%';
+    document.getElementById('npElapsed').textContent=fms(lPos);
+  },1000);
 }
 
-// ══════════════════════════════════════════════════════
-//  PROGRESS TICK (local, between polls)
-// ══════════════════════════════════════════════════════
-function startProgressTick() {
-  clearInterval(progressTimer);
-  progressTimer = setInterval(() => {
-    if (!state?.nowPlaying || state.nowPlaying.isPaused) return;
-    localPositionMs = Math.min(localPositionMs + 1000, localDurationMs);
-    const pct = localDurationMs > 0 ? (localPositionMs / localDurationMs) * 100 : 0;
-    document.getElementById('npProg').style.width     = pct + '%';
-    document.getElementById('npElapsed').textContent  = fmtMs(localPositionMs);
-  }, 1000);
-}
+// ─── poll ────────────────────────────────────────────────────────
+async function pollApi(){
+  try{
+    const res=await fetch('/api/state'); if(!res.ok)return;
+    const ns=await res.json();
+    const wasPlaying=!!state?.nowPlaying, isPlaying=!!ns.nowPlaying;
+    state=ns;
+    dur=(state.config?.screenDuration||15)*1000;
+    poll=(state.config?.pollInterval||5)*1000;
 
-// ══════════════════════════════════════════════════════
-//  POLL
-// ══════════════════════════════════════════════════════
-async function poll() {
-  try {
-    const res = await fetch('/api/state');
-    if (!res.ok) return;
-    const newState = await res.json();
+    if(isPlaying)renderNP(state.nowPlaying);
+    renderUpNext(state); renderUpcoming(state); renderSpotlight(state); renderIdle(state); dots();
 
-    const wasPlaying = !!state?.nowPlaying;
-    const isPlaying  = !!newState.nowPlaying;
-    state = newState;
-
-    screenDuration = (state.config?.screenDuration || 15) * 1000;
-    pollInterval   = (state.config?.pollInterval   || 5)  * 1000;
-
-    // Always render all screens with fresh data
-    if (isPlaying) renderNowPlaying(state.nowPlaying);
-    renderUpcoming(state);
-    renderSpotlight(state);
-    renderIdle(state);
-    updateDots();
-    updateServices(state.services);
-
-    if (isPlaying) {
-      startProgressTick();
-      if (!locked) {
-        // Playback just started — lock to now-playing
-        locked = true;
-        clearTimeout(screenTimer);
-        goTo(0);
-      }
-      // If already locked, stay here — data is already updated above
-    } else {
-      clearInterval(progressTimer);
-      if (locked) {
-        // Playback just stopped — unlock and rotate
-        locked = false;
-        const rotation = getRotation(state);
-        goTo(rotation[0]);
-        startRotation();
-      } else if (!screenTimer) {
-        // First boot with nothing playing — start rotation
-        const rotation = getRotation(state);
-        goTo(rotation[0], true);
-        startRotation();
-      }
+    if(isPlaying){
+      startProg();
+      if(!locked){locked=true;clearTimeout(sTmr);goTo(0);}
+    }else{
+      clearInterval(progTmr);
+      if(locked){locked=false;const r=rot(state);goTo(r[0]);startRot();}
+      else if(!sTmr){const r=rot(state);goTo(r[0],true);startRot();}
     }
-
-  } catch (e) {
-    console.warn('[poll]', e.message);
-  } finally {
-    clearTimeout(pollTimer);
-    pollTimer = setTimeout(poll, pollInterval);
-  }
+  }catch(e){console.warn('[poll]',e.message);}
+  finally{clearTimeout(pTmr);pTmr=setTimeout(pollApi,poll);}
 }
 
-// ══════════════════════════════════════════════════════
-//  BOOT
-// ══════════════════════════════════════════════════════
-poll();
+dots(); pollApi();
 </script>
 </body>
 </html>
