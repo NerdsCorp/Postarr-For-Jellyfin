@@ -2,7 +2,6 @@
 
 A cinematic now-playing display for Jellyfin — with optional Radarr, Sonarr, and Overseerr/Jellyseerr integration. Open it in a browser on any screen and it automatically rotates between what's playing, what's coming up, and a spotlight on your next download.
 
-![Postarr Screenshot](https://image.tmdb.org/t/p/original/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg)
 
 ---
 
