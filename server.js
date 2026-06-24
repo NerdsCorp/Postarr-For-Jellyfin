@@ -5,6 +5,17 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const logger = {
+  info: (...args) => console.log('[Postarr-Jellyfin]', ...args),
+  warn: (...args) => console.warn('[Postarr-Jellyfin]', ...args),
+  error: (...args) => console.error('[Postarr-Jellyfin]', ...args),
+};
+
+app.use((req, res, next) => {
+  logger.info('HTTP', req.method, req.path);
+  next();
+});
+
 // ── Config from env ──────────────────────────────────────────────
 const config = {
   jellyfin: {
@@ -28,16 +39,45 @@ const config = {
 };
 
 // ── Helpers ──────────────────────────────────────────────────────
+function ensureApiKey(url, apiKey) {
+  const hasApiKey = /[?&]api_key=/.test(url);
+  if (hasApiKey) return url;
+  return url + (url.includes('?') ? '&' : '?') + 'api_key=' + encodeURIComponent(apiKey);
+}
+
 async function apiFetch(url, apiKey, label) {
+  if (!url || !apiKey) {
+    logger.warn(`[${label}] missing configuration; skipping fetch.`);
+    return null;
+  }
+
+  if (label === 'Jellyfin') {
+    url = ensureApiKey(url, apiKey);
+  }
+
+  logger.info(`[${label}] fetching`, url);
   try {
+    const headers = { 'Accept': 'application/json' };
+    if (label === 'Jellyfin') {
+      headers['X-Emby-Token'] = apiKey;
+      headers['X-Api-Key'] = apiKey;
+    } else {
+      headers['X-Api-Key'] = apiKey;
+    }
+
     const res = await fetch(url, {
-      headers: { 'X-Api-Key': apiKey, 'Accept': 'application/json' },
+      headers,
       timeout: 5000,
     });
-    if (!res.ok) return null;
-    return await res.json();
+    if (!res.ok) {
+      logger.warn(`[${label}] fetch failed`, res.status, res.statusText, url);
+      return null;
+    }
+    const json = await res.json();
+    logger.info(`[${label}] fetched ${url} ->`, Array.isArray(json) ? `array(${json.length})` : typeof json);
+    return json;
   } catch (e) {
-    console.warn(`[${label}] fetch error:`, e.message);
+    logger.error(`[${label}] fetch error:`, e.message, url);
     return null;
   }
 }
@@ -258,6 +298,7 @@ async function getRadarrFileDetails(title, year) {
 // ── Combined API endpoint ─────────────────────────────────────────
 app.get('/api/state', async (req, res) => {
   try {
+    logger.info('/api/state requested');
     const [session, radarrData, sonarrData] = await Promise.all([
       getActiveSessions(),
       getRadarrData(),
@@ -306,6 +347,14 @@ app.get('/api/state', async (req, res) => {
       if (spotlight) spotlight = { ...spotlight, pct: null, status: 'available' };
     }
 
+    logger.info('state built:', {
+      nowPlaying: !!nowPlaying,
+      downloading: downloading.length,
+      requested: requested.length,
+      available: available.length,
+      spotlight: spotlight?.title || null,
+    });
+
     res.json({
       nowPlaying,
       downloading,
@@ -324,7 +373,7 @@ app.get('/api/state', async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('[API] Error:', err);
+    logger.error('[API] Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
