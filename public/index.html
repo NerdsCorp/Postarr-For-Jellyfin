@@ -57,7 +57,7 @@
                 radial-gradient(ellipse 40% 30% at 80% 20%, rgba(124,106,175,0.03) 0%, transparent 70%); }
 
   /* ═══ SCREEN 1: NOW PLAYING — v3 split ═══ */
-  #s-np { display: grid; grid-template-columns: var(--left-w) 1fr; background: var(--bg); }
+  #s-np { display: grid; grid-template-columns: var(--left-w) 1fr; background: var(--bg); min-height: 100%; height: 100%; }
 
   /* left */
   .np-left { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
@@ -98,7 +98,7 @@
   .fchip .fl { font-size: calc(var(--fs-xxs) - 1px); color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: block; margin-bottom: 1px; }
   .fchip .fv { font-size: var(--fs-xxs); font-weight: 600; }
 
-  .overview { font-size: var(--fs-xxs); color: var(--muted); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .overview { font-size: var(--fs-xxs); color: var(--muted); line-height: 1.6; display: -webkit-box; line-clamp: 3; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
   .slabel { font-size: calc(var(--fs-xxs) - 1px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); }
   .cast-row { display: flex; gap: clamp(4px,0.5vw,8px); overflow-x: auto; scrollbar-width: none; }
@@ -135,11 +135,23 @@
   #s-up { background: var(--bg); display: flex; flex-direction: column; padding: clamp(22px,3.5vh,48px) clamp(22px,3.5vw,52px) clamp(18px,2.5vh,36px); gap: clamp(14px,2vh,26px); }
   #s-up h1 { font-family: 'DM Serif Display', serif; font-size: clamp(1.3rem,2.8vw,2.3rem); font-weight: 400; margin-bottom: 4px; }
   #s-up .sub { font-size: var(--fs-xs); color: var(--muted); }
-  .big-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: clamp(10px,1.4vw,18px); flex: 1; overflow: hidden; align-content: start; }
-  .big-card { transition: transform .2s; }
-  .big-card:hover { transform: translateY(-4px) scale(1.02); }
-  .big-card:hover .bp { border-color: rgba(200,169,126,.5); box-shadow: 0 8px 32px rgba(0,0,0,.5); }
-  .bst { position: relative; margin-bottom: clamp(5px,0.8vh,9px); }
+  .up-card { display: grid; grid-template-columns: 1fr; gap: clamp(16px,2vw,26px); align-items: center; justify-items: center; flex: 1; overflow: hidden; }
+  .up-card .up-poster { width: min(760px,100%); aspect-ratio: 2/3; object-fit: cover; border-radius: calc(var(--radius) * 1.25); border: 1px solid var(--border); background: var(--surface2); }
+  .up-details { width: min(820px,100%); display: flex; flex-direction: column; gap: clamp(10px,1.5vw,18px); }
+  .up-eyebrow { font-size: var(--fs-xxs); font-weight: 600; letter-spacing: .15em; text-transform: uppercase; color: var(--accent); }
+  .up-title { font-family: 'DM Serif Display', serif; font-size: clamp(2rem,4.2vw,4rem); line-height: 1.05; }
+  .up-meta { font-size: var(--fs-sm); color: var(--muted); letter-spacing: .02em; }
+  .up-overview { font-size: var(--fs-xs); color: var(--muted); line-height: 1.7; display: -webkit-box; line-clamp: 4; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .up-badges { display: flex; gap: clamp(8px,1vw,12px); flex-wrap: wrap; }
+  .up-badge { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: clamp(6px,0.8vh,9px) clamp(10px,1vw,14px); font-size: var(--fs-xs); font-weight: 600; }
+  .up-status { color: var(--accent); }
+  .up-rating { color: #f5c518; }
+  .up-poster-wrap { position: relative; width: min(760px,100%); }
+  .up-poster-wrap .up-label { position: absolute; bottom: clamp(12px,1.2vh,16px); left: clamp(12px,1.2vw,16px); background: rgba(0,0,0,0.7); border-radius: 6px; padding: 6px 10px; font-size: var(--fs-xs); font-weight: 700; color: white; }
+  .up-empty { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: var(--fs-sm); min-height: 280px; }
+  .big-grid { display: none; }
+  .big-card { display: none; }
+  .bst { display: none; }
   .bp { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: var(--radius); display: block; border: 1px solid var(--border); background: var(--surface2); transition: all .2s; }
   .bb { position: absolute; bottom: clamp(5px,0.8vh,9px); left: clamp(5px,0.5vw,8px); font-size: calc(var(--fs-xxs) - 1px); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; }
   .br { position: absolute; top: clamp(5px,0.8vh,8px); right: clamp(5px,0.5vw,8px); background: rgba(0,0,0,.72); backdrop-filter: blur(4px); border-radius: 3px; padding: 2px 5px; font-size: calc(var(--fs-xxs) - 1px); font-weight: 700; color: #f5c518; }
@@ -161,14 +173,16 @@
   .sp-rats { display: flex; gap: clamp(6px,0.7vw,11px); margin-bottom: clamp(9px,1.3vh,18px); flex-wrap: wrap; }
   .sp-rpill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; padding: clamp(4px,0.6vh,7px) clamp(8px,0.8vw,13px); font-size: clamp(10px,1vw,13px); font-weight: 600; }
   .sp-rpill .srl { font-size: var(--fs-xxs); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
-  .sp-overview { font-size: var(--fs-xs); color: var(--muted); line-height: 1.7; margin-bottom: clamp(9px,1.3vh,20px); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .sp-overview { font-size: var(--fs-xs); color: var(--muted); line-height: 1.7; margin-bottom: clamp(9px,1.3vh,20px); display: -webkit-box; line-clamp: 4; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
   .sp-cast { display: flex; gap: clamp(6px,0.7vw,11px); align-items: center; flex-wrap: wrap; }
   .sp-cast-label { font-size: var(--fs-xxs); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-right: 4px; }
   .sp-cast img { width: clamp(26px,2.5vw,38px); height: clamp(26px,2.5vw,38px); border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.12); background: var(--surface2); }
 
   /* ═══ SCREEN 4: IDLE ═══ */
-  #s-idle { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--bg); }
+  #s-idle { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--bg); min-height: 100%; height: 100%; }
   .idle-clock { font-family: 'DM Serif Display', serif; font-size: clamp(4rem,11vw,8rem); line-height: 1; color: rgba(232,228,220,0.07); letter-spacing: -0.04em; margin-bottom: 8px; }
+  .idle-title { font-family: 'DM Serif Display', serif; font-size: clamp(1.5rem, 3vw, 2.5rem); color: var(--text); text-align: center; margin-bottom: 4px; }
+  .idle-meta { font-size: var(--fs-sm); color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
   .idle-label { font-size: var(--fs-xxs); color: var(--muted2); letter-spacing: .15em; text-transform: uppercase; }
   .idle-posters { display: flex; gap: clamp(7px,0.9vw,13px); margin-top: clamp(14px,2.5vh,28px); }
   .idle-posters img { width: clamp(40px,4.2vw,66px); aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; opacity: 0.15; border: 1px solid var(--border); background: var(--surface2); }
@@ -233,7 +247,9 @@
   <!-- ═══ UPCOMING ═══ -->
   <div class="screen" id="s-up">
     <div><h1>Coming Up</h1><div class="sub" id="upSub">Your library</div></div>
-    <div class="big-grid" id="upGrid"></div>
+    <div class="up-card" id="upCard">
+      <div class="up-empty">Loading a single recommendation...</div>
+    </div>
   </div>
 
   <!-- ═══ SPOTLIGHT ═══ -->
@@ -257,6 +273,8 @@
   <!-- ═══ IDLE ═══ -->
   <div class="screen" id="s-idle">
     <div class="idle-clock" id="clock">--:--</div>
+    <div class="idle-title" id="idleTitle">Browse your collection</div>
+    <div class="idle-meta" id="idleMeta">A random movie or TV show</div>
     <div class="idle-label">Nothing playing</div>
     <div class="idle-posters" id="idlePosts"></div>
   </div>
@@ -314,10 +332,11 @@ function wipe(f,t){
 
 // ─── rotation ────────────────────────────────────────────────────
 function rot(s){
+  if (s.nowPlaying) return [0];
   const l=[];
-  if(s.nowPlaying)l.push(0);
-  if(s.downloading?.length||s.requested?.length||s.available?.length)l.push(1);
-  if(s.spotlight)l.push(2);
+  if(s.downloading?.length||s.requested?.length||s.available?.length) l.push(1);
+  if(s.spotlight) l.push(2);
+  if (l.length > 1) l.sort(() => Math.random() - 0.5);
   return l.length?l:[3];
 }
 function startRot(){
@@ -341,9 +360,9 @@ const CLS={downloading:'s-dl',available:'s-av',requested:'s-rq'};
 
 function items(s,t){
   const all=[
-    ...(s.downloading||[]).map(d=>({title:d.title,year:'',posterUrl:d.posterUrl||null,status:'downloading',label:`${d.pct}%↓`,rating:null,type:'movie'})),
-    ...(s.available||[]).map(m=>({title:m.title,year:m.year,posterUrl:m.posterUrl,status:'available',label:'Available',rating:m.rating||null,type:m.type||'movie'})),
-    ...(s.requested||[]).map(r=>({title:r.title,year:r.year,posterUrl:r.posterUrl,status:'requested',label:'Requested',rating:null,type:r.type||'movie'})),
+    ...(s.downloading||[]).map(d=>({title:d.title,year:'',posterUrl:d.posterUrl||null,status:'downloading',label:`${d.pct}%↓`,rating:null,type:'movie',source:'radarr'})),
+    ...(s.available||[]).map(m=>({title:m.title,year:m.year,posterUrl:m.posterUrl,status:'available',label:'Available',rating:m.rating||null,type:m.type||'movie',source:'library'})),
+    ...(s.requested||[]).map(r=>({title:r.title,year:r.year,posterUrl:r.posterUrl,status:'requested',label:'Requested',rating:null,type:r.type||'movie',source:'seer'})),
   ];
   if(t==='movies')return all.filter(i=>i.type!=='series');
   if(t==='tv')return all.filter(i=>i.type==='series');
@@ -426,9 +445,34 @@ function renderUpNext(s){
 }
 
 function renderUpcoming(s){
-  const it=items(s,'all');
-  document.getElementById('upGrid').innerHTML=it.slice(0,12).map(i=>card(i,'big-card','bst')).join('');
-  document.getElementById('upSub').textContent=svcSub(s);
+  const all = items(s,'all').filter(i=>i.posterUrl);
+  const choice = all.length ? all[Math.floor(Math.random() * all.length)] : null;
+  const container = document.getElementById('upCard');
+  document.getElementById('upSub').textContent = svcSub(s);
+
+  if (!choice) {
+    container.innerHTML = '<div class="up-empty">No content available right now.</div>';
+    return;
+  }
+
+  const badges = [
+    `<span class="up-badge up-status">${choice.label}</span>`,
+    choice.rating ? `<span class="up-badge up-rating">★ ${parseFloat(choice.rating).toFixed(1)}</span>` : '',
+  ].filter(Boolean).join('');
+
+  container.innerHTML = `
+    <div class="up-poster-wrap">
+      <img class="up-poster" src="${choice.posterUrl}" alt="${choice.title}">
+      <div class="up-label">${choice.type === 'series' ? 'TV / Series' : 'Movie'}</div>
+    </div>
+    <div class="up-details">
+      <div class="up-eyebrow">${choice.source === 'radarr' ? 'Movies' : choice.source === 'sonarr' ? 'TV' : 'Library'}</div>
+      <div class="up-title">${choice.title}</div>
+      <div class="up-meta">${[choice.year || '', choice.source].filter(Boolean).join(' · ')}</div>
+      <div class="up-badges">${badges}</div>
+      <div class="up-overview">${choice.overview || 'A hand-picked item from your collection.'}</div>
+    </div>
+  `;
 }
 
 function renderSpotlight(s){
@@ -450,8 +494,22 @@ function renderSpotlight(s){
 }
 
 function renderIdle(s){
-  const urls=[...(s.available||[]),...(s.requested||[]),...(s.downloading||[])].map(i=>i.posterUrl).filter(Boolean).slice(0,7);
-  document.getElementById('idlePosts').innerHTML=urls.map(u=>`<img src="${u}" alt="">`).join('');
+  const items = [
+    ...(s.available||[]).map(i=>({...i, sourceLabel:'Available'})),
+    ...(s.requested||[]).map(i=>({...i, sourceLabel:'Requested'})),
+    ...(s.downloading||[]).map(i=>({...i, sourceLabel:'Downloading'})),
+  ].filter(i=>i.posterUrl);
+  const choice = items.length ? items[Math.floor(Math.random() * items.length)] : null;
+  if(choice){
+    document.getElementById('idleTitle').textContent = choice.title || 'Unknown title';
+    document.getElementById('idleMeta').textContent = [choice.year || '', choice.sourceLabel, choice.type === 'series' ? 'TV' : 'Movie'].filter(Boolean).join(' · ');
+  } else {
+    document.getElementById('idleTitle').textContent = 'Browse your collection';
+    document.getElementById('idleMeta').textContent = 'A random movie or TV show';
+  }
+
+  const urls = items.map(i=>i.posterUrl).slice(0,7);
+  document.getElementById('idlePosts').innerHTML = urls.map(u=>`<img src="${u}" alt="">`).join('');
 }
 
 // ─── tabs ────────────────────────────────────────────────────────
