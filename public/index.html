@@ -51,15 +51,16 @@
     padding: clamp(18px, 5vh, 64px) clamp(18px, 6vw, 88px);
     background: var(--bg);
     overflow: hidden;
+    isolation: isolate;
   }
 
-  .np-backdrop { position: absolute; inset: -8%; z-index: 0; background-size: cover; background-position: center; filter: blur(34px) brightness(0.18) saturate(1.25); transform: scale(1.08); opacity: .9; transition: background-image .6s ease; }
-  .np-shade { position: absolute; inset: 0; z-index: 1; background: radial-gradient(circle at 32% 50%, rgba(232,228,220,.1), transparent 30%), linear-gradient(90deg, rgba(9,9,16,.94), rgba(9,9,16,.74) 44%, rgba(9,9,16,.9)); }
+  .np-backdrop { position: absolute; inset: -8%; z-index: 0; pointer-events: none; background-size: cover; background-position: center; filter: blur(34px) brightness(0.18) saturate(1.25); transform: scale(1.08); opacity: .75; transition: background-image .6s ease; }
+  .np-shade { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, transparent 0%, transparent 34%, rgba(9,9,16,.72) 54%, rgba(9,9,16,.94) 100%); }
 
-  .np-left { position: relative; z-index: 2; display: contents; }
+  .np-left { position: relative; z-index: 1; display: contents; }
 
-  .np-poster-region { position: relative; z-index: 3; isolation: isolate; align-self: center; justify-self: center; width: min(100%, 420px, calc((100dvh - clamp(36px, 10vh, 128px)) * .666)); max-height: calc(100dvh - clamp(36px, 10vh, 128px)); }
-  .np-poster-region img { width: 100%; max-height: calc(100dvh - clamp(36px, 10vh, 128px)); aspect-ratio: 2/3; object-fit: cover; display: block; border-radius: clamp(7px, .7vw, 12px); border: 1px solid rgba(255,255,255,.22); box-shadow: 0 18px 54px rgba(0,0,0,.58); background: var(--surf2); filter: none; opacity: 1; }
+  .np-poster-region { position: relative; z-index: 10; isolation: isolate; align-self: center; justify-self: center; width: min(100%, 420px, calc((100dvh - clamp(36px, 10vh, 128px)) * .666)); max-height: calc(100dvh - clamp(36px, 10vh, 128px)); }
+  .np-poster-region img { position: relative; z-index: 2; width: 100%; max-height: calc(100dvh - clamp(36px, 10vh, 128px)); aspect-ratio: 2/3; object-fit: cover; display: block; border-radius: clamp(7px, .7vw, 12px); border: 1px solid rgba(255,255,255,.26); box-shadow: 0 18px 54px rgba(0,0,0,.58); background: var(--surf2); filter: brightness(1.08) contrast(1.04) saturate(1.04); opacity: 1; }
   .np-poster-region::after { content: none; }
 
   .np-live { position: absolute; top: clamp(6px,1vh,12px); left: clamp(6px,1vw,12px); z-index: 2; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.12); border-radius: 100px; padding: 3px 9px 3px 7px; font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
@@ -68,7 +69,7 @@
 
   .np-qb { position: absolute; top: clamp(6px,1vh,12px); right: clamp(6px,1vw,12px); z-index: 2; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); border: 1px solid rgba(200,169,126,0.3); border-radius: 4px; padding: 2px 7px; font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .08em; color: var(--accent); }
 
-  .np-scroll { position: relative; z-index: 2; align-self: center; min-width: 0; max-width: 680px; max-height: calc(100dvh - clamp(36px, 10vh, 128px)); overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: clamp(9px,1.25vh,16px); padding-right: 4px; }
+  .np-scroll { position: relative; z-index: 5; align-self: center; min-width: 0; max-width: 680px; max-height: calc(100dvh - clamp(36px, 10vh, 128px)); overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: clamp(9px,1.25vh,16px); padding-right: 4px; }
   .np-scroll::-webkit-scrollbar { display: none; }
 
   .np-title { font-family: 'DM Serif Display', serif; font-size: clamp(1.9rem,4.8vw,5rem); line-height: 1.02; overflow-wrap: anywhere; }
@@ -288,9 +289,11 @@ const fadeOv = document.getElementById('fadeOv');
 const wipeOv = document.getElementById('wipeOv');
 const CLS    = { downloading:'s-dl', available:'s-av', requested:'s-rq' };
 
-let cur=3, locked=false, sTmr=null, pTmr=null, progTmr=null;
+let cur=3, locked=false, idleStarted=false, sTmr=null, pTmr=null, progTmr=null;
 let xing=false, state=null;
 let anim='fade', scrDur=15000, pollMs=5000, lPos=0, lDur=0;
+let rotationEnabled=true, transitionMode='cycle', idleScreenNames=['upcoming','spotlight','idle'];
+let clockTimezone=null;
 
 // ─── logging ──────────────────────────────────────────────────────
 const LOG = {
@@ -301,7 +304,16 @@ const LOG = {
 };
 
 // ─── clock ────────────────────────────────────────────────────────
-function tick(){const n=new Date();document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
+function tick(){
+  const opts={hour:'numeric',minute:'2-digit',hour12:true};
+  if(clockTimezone)opts.timeZone=clockTimezone;
+  try{
+    document.getElementById('clock').textContent=new Intl.DateTimeFormat('en-US',opts).format(new Date());
+  }catch(e){
+    clockTimezone=null;
+    document.getElementById('clock').textContent=new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit',hour12:true}).format(new Date());
+  }
+}
 tick(); setInterval(tick,15000);
 
 function fms(ms){if(!ms||ms<=0)return'0:00:00';const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
@@ -339,19 +351,23 @@ function doWipe(f,t){
 // When playing:  locked on s-np (index 0), no rotation
 // When idle:     cycles [s-up(1), s-sp(2), s-idle(3)]
 function getIdleRotation(s){
+  const screenIds={upcoming:1,up:1,spotlight:2,sp:2,idle:3,clock:3};
   const l=[];
-  if((s.downloading?.length||s.requested?.length||s.available?.length))l.push(1);
-  if(s.spotlight)l.push(2);
-  l.push(3);
-  return l;
+  idleScreenNames.forEach(name=>{
+    const screenId=screenIds[name];
+    if(screenId===1&&(s.downloading?.length||s.requested?.length||s.available?.length))l.push(1);
+    else if(screenId===2&&s.spotlight)l.push(2);
+    else if(screenId===3)l.push(3);
+  });
+  return [...new Set(l)].length?[...new Set(l)]:[3];
 }
 function startRot(){
-  clearTimeout(sTmr);if(locked)return;
+  clearTimeout(sTmr);if(locked||!rotationEnabled)return;
   sTmr=setTimeout(()=>{
-    if(locked||!state)return;
+    if(locked||!state||!rotationEnabled)return;
     const r=getIdleRotation(state);
     const next=r[(r.indexOf(cur)+1)%r.length];
-    anim=['fade','slide','wipe'][Math.floor(Date.now()/scrDur)%3];
+    anim=transitionMode==='cycle'?['fade','slide','wipe'][Math.floor(Date.now()/scrDur)%3]:transitionMode;
     goTo(next);startRot();
   },scrDur);
 }
@@ -507,6 +523,11 @@ async function pollApi(){
     state=ns;
     scrDur=(state.config?.screenDuration||15)*1000;
     pollMs=(state.config?.pollInterval||5)*1000;
+    rotationEnabled=state.config?.screenRotation!==false;
+    transitionMode=['cycle','fade','slide','wipe'].includes(state.config?.screenTransition)?state.config.screenTransition:'cycle';
+    idleScreenNames=Array.isArray(state.config?.idleScreens)&&state.config.idleScreens.length?state.config.idleScreens:['upcoming','spotlight','idle'];
+    clockTimezone=state.config?.clockTimezone||null;tick();
+    if(!rotationEnabled){clearTimeout(sTmr);sTmr=null;}
 
     // always render non-playing screens
     renderUpcoming(state);
@@ -516,6 +537,7 @@ async function pollApi(){
     if(isPlaying){
       renderNP(state.nowPlaying);
       startProg();
+      idleStarted=false;
       if(!locked){
         LOG.info('Playback started — locking to Now Playing');
         locked=true;clearTimeout(sTmr);goTo(0);
@@ -524,11 +546,13 @@ async function pollApi(){
       clearInterval(progTmr);
       if(locked){
         LOG.info('Playback stopped — starting idle rotation');
-        locked=false;
-        const r=getIdleRotation(state);goTo(r[0]);startRot();
-      }else if(!sTmr){
+        locked=false;idleStarted=true;
+        const r=getIdleRotation(state);goTo(r[0]);if(rotationEnabled)startRot();
+      }else if(!idleStarted){
         LOG.info('Boot — starting idle rotation');
-        const r=getIdleRotation(state);goTo(r[0],true);startRot();
+        idleStarted=true;const r=getIdleRotation(state);goTo(r[0],true);if(rotationEnabled)startRot();
+      }else if(rotationEnabled&&!sTmr){
+        startRot();
       }
     }
     dots();

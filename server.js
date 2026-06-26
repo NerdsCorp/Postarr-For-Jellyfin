@@ -6,6 +6,24 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 const APP_VERSION = require('./package.json').version || '1.0.0';
 
+function envBool(name, fallback) {
+  const value = process.env[name];
+  if (value === undefined) return fallback;
+  return ['1', 'true', 'yes', 'on'].includes(String(value).trim().toLowerCase());
+}
+
+function envChoice(name, fallback, choices) {
+  const value = String(process.env[name] || fallback).trim().toLowerCase();
+  return choices.includes(value) ? value : fallback;
+}
+
+function envList(name) {
+  return (process.env[name] || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 // ── Config ────────────────────────────────────────────────────────
 const config = {
   jellyfin: { url: (process.env.JELLYFIN_URL  || '').replace(/\/$/, ''), apiKey: process.env.JELLYFIN_API_KEY  || '' },
@@ -14,6 +32,19 @@ const config = {
   seer:     { url: (process.env.SEER_URL      || '').replace(/\/$/, ''), apiKey: process.env.SEER_API_KEY      || '' },
   pollInterval:   parseInt(process.env.POLL_INTERVAL   || '5',  10),
   screenDuration: parseInt(process.env.SCREEN_DURATION || '15', 10),
+  screenRotation: envBool('SCREEN_ROTATION', true),
+  screenTransition: envChoice('SCREEN_TRANSITION', 'cycle', ['cycle', 'fade', 'slide', 'wipe']),
+  idleScreens: (process.env.IDLE_SCREENS || 'upcoming,spotlight,idle')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean),
+  clockTimezone: (process.env.CLOCK_TIMEZONE || process.env.TZ || '').trim() || null,
+  nowPlayingFilters: {
+    userWhitelist: envList('NOW_PLAYING_USER_WHITELIST'),
+    userBlacklist: envList('NOW_PLAYING_USER_BLACKLIST'),
+    deviceWhitelist: envList('NOW_PLAYING_DEVICE_WHITELIST'),
+    deviceBlacklist: envList('NOW_PLAYING_DEVICE_BLACKLIST'),
+  },
 };
 
 // ── Logger ────────────────────────────────────────────────────────
@@ -100,6 +131,27 @@ function jfImageUrl(itemId, imageType = 'Primary', options = {}) {
   return `/api/jellyfin/image/${encodeURIComponent(itemId)}/${encodeURIComponent(imageType)}${index}${query ? `?${query}` : ''}`;
 }
 
+function listMatches(list, values) {
+  if (!list.length) return false;
+  return values
+    .filter(Boolean)
+    .map(v => String(v).trim().toLowerCase())
+    .some(v => list.includes(v));
+}
+
+function sessionAllowed(session) {
+  const filters = config.nowPlayingFilters;
+  const userValues = [session.UserName, session.UserId];
+  const deviceValues = [session.DeviceName, session.DeviceId, session.Client];
+
+  if (filters.userWhitelist.length && !listMatches(filters.userWhitelist, userValues)) return false;
+  if (filters.deviceWhitelist.length && !listMatches(filters.deviceWhitelist, deviceValues)) return false;
+  if (listMatches(filters.userBlacklist, userValues)) return false;
+  if (listMatches(filters.deviceBlacklist, deviceValues)) return false;
+
+  return true;
+}
+
 // ── Jellyfin: active sessions ─────────────────────────────────────
 async function getActiveSessions() {
   if (!config.jellyfin.url || !config.jellyfin.apiKey) {
@@ -116,10 +168,11 @@ async function getActiveSessions() {
     return null;
   }
 
-  const playing = data.filter(s => s.NowPlayingItem);
+  const playingAll = data.filter(s => s.NowPlayingItem);
+  const playing = playingAll.filter(sessionAllowed);
   const session = playing.find(s => !s.PlayState?.IsPaused) || playing[0] || null;
 
-  logger.debug('Jellyfin', `Sessions: ${data.length} total, ${playing.length} playing, locked=${!!session}`);
+  logger.debug('Jellyfin', `Sessions: ${data.length} total, ${playingAll.length} playing, ${playing.length} allowed, locked=${!!session}`);
 
   if (!session) return null;
 
@@ -378,7 +431,14 @@ app.get('/api/state', async (req, res) => {
 
     res.json({
       nowPlaying, downloading, requested, available, spotlight,
-      config:   { pollInterval: config.pollInterval, screenDuration: config.screenDuration },
+      config:   {
+        pollInterval: config.pollInterval,
+        screenDuration: config.screenDuration,
+        screenRotation: config.screenRotation,
+        screenTransition: config.screenTransition,
+        idleScreens: config.idleScreens,
+        clockTimezone: config.clockTimezone,
+      },
       services: { jellyfin: !!config.jellyfin.url, radarr: !!config.radarr.url, sonarr: !!config.sonarr.url, seer: !!config.seer.url },
     });
   } catch (err) {
@@ -390,7 +450,12 @@ app.get('/api/state', async (req, res) => {
 // ── /api/config ───────────────────────────────────────────────────
 app.get('/api/config', (req, res) => {
   res.json({
-    pollInterval: config.pollInterval, screenDuration: config.screenDuration,
+    pollInterval: config.pollInterval,
+    screenDuration: config.screenDuration,
+    screenRotation: config.screenRotation,
+    screenTransition: config.screenTransition,
+    idleScreens: config.idleScreens,
+    clockTimezone: config.clockTimezone,
     services: { jellyfin: !!config.jellyfin.url, radarr: !!config.radarr.url, sonarr: !!config.sonarr.url, seer: !!config.seer.url },
   });
 });
@@ -447,6 +512,9 @@ app.listen(PORT, () => {
   Log level: ${process.env.LOG_LEVEL || 'INFO'}
   Poll:      every ${config.pollInterval}s
   Screens:   ${config.screenDuration}s each
+  Rotation:  ${config.screenRotation ? 'enabled' : 'disabled'}
+  Switch:    ${config.screenTransition}
+  Timezone:  ${config.clockTimezone || 'browser default'}
 
   ${svc('Jellyfin', config.jellyfin.url)}
   ${svc('Radarr',   config.radarr.url)}

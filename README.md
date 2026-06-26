@@ -78,6 +78,16 @@ SEER_API_KEY=your_key_here
 # Timing
 POLL_INTERVAL=5       # seconds between Jellyfin polls
 SCREEN_DURATION=15    # seconds per screen in rotation
+SCREEN_ROTATION=true  # rotate idle screens when nothing is playing
+SCREEN_TRANSITION=cycle # cycle, fade, slide, or wipe
+IDLE_SCREENS=upcoming,spotlight,idle # idle screen order
+CLOCK_TIMEZONE=America/Chicago # optional; falls back to TZ/browser time
+
+# Now Playing filters
+NOW_PLAYING_USER_WHITELIST=   # comma-separated Jellyfin users to allow
+NOW_PLAYING_USER_BLACKLIST=   # comma-separated Jellyfin users to ignore
+NOW_PLAYING_DEVICE_WHITELIST= # comma-separated device names/ids/clients to allow
+NOW_PLAYING_DEVICE_BLACKLIST= # comma-separated device names/ids/clients to ignore
 ```
 
 ### Getting API keys
