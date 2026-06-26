@@ -10,656 +10,758 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:         #090910;
-    --surface:    #111118;
-    --surface2:   #18181f;
-    --border:     rgba(255,255,255,0.07);
-    --accent:     #c8a97e;
-    --accent-dim: rgba(200,169,126,0.15);
-    --text:       #e8e4dc;
-    --muted:      #6b6878;
-    --muted2:     #2e2c37;
-    --red:        #e05a5a;
-    --green:      #5ae07a;
-    --blue:       #a0a0f0;
-    /* fluid scale */
-    --left-w:      clamp(200px, 21vw, 320px);
-    --poster-h:    clamp(150px, 26vh, 300px);
-    --pad-x:       clamp(10px, 1.4vw, 20px);
-    --pad-y:       clamp(8px,  1.2vh, 18px);
-    --gap:         clamp(6px,  0.9vh, 12px);
-    --fs-xxs:      clamp(7px,  0.65vw, 9px);
-    --fs-xs:       clamp(8px,  0.78vw, 11px);
-    --fs-sm:       clamp(10px, 0.9vw,  13px);
-    --fs-md:       clamp(12px, 1.1vw,  16px);
-    --fs-title:    clamp(1rem, 1.9vw,  1.6rem);
-    --fs-hero:     clamp(1.6rem, 3.5vw, 3.4rem);
-    --radius:      clamp(4px, 0.5vw, 8px);
+    --bg:      #090910;
+    --surface: #111118;
+    --surf2:   #18181f;
+    --border:  rgba(255,255,255,0.07);
+    --accent:  #c8a97e;
+    --adim:    rgba(200,169,126,0.15);
+    --text:    #e8e4dc;
+    --muted:   #6b6878;
+    --muted2:  #2e2c37;
+    --red:     #e05a5a;
+    --green:   #5ae07a;
+    --blue:    #a0a0f0;
   }
 
-  html, body {
-    min-height: 100%; height: 100%; width: 100%;
-    background: var(--bg); color: var(--text);
+  /* ── Reset: force true full-viewport ── */
+  html { height: 100%; }
+  body {
+    height: 100%; width: 100%;
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
     font-family: 'DM Sans', sans-serif;
     overflow: hidden;
   }
 
-  .sc { position: relative; width: 100vw; min-height: 100vh; height: 100vh; overflow: hidden; }
+  /* ── Screen container ── */
+  #app {
+    position: fixed;
+    inset: 0;          /* top:0 right:0 bottom:0 left:0 — guarantees 100vw × 100vh */
+    overflow: hidden;
+  }
 
-  /* ═══ SCREEN SYSTEM ═══ */
-  .sc { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
-  .screen { position: absolute; inset: 0; opacity: 0; visibility: hidden; pointer-events: none;
-    display: grid; place-items: center; padding: clamp(24px, 3vw, 40px); }
-  .screen.active { opacity: 1; visibility: visible; pointer-events: all; }
-  .screen-inner,
-  .sp-body,
-  .idle-card { width: min(96vw, 1040px); max-width: 100%; }
-  .fade-ov { position: fixed; inset: 0; background: var(--bg); opacity: 0; z-index: 100; pointer-events: none; }
-  .wipe-ov { position: fixed; inset: 0; background: var(--accent); transform: translateX(-101%); z-index: 100; pointer-events: none; }
-  .ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0;
-    background: radial-gradient(ellipse 60% 40% at 20% 80%, rgba(200,169,126,0.04) 0%, transparent 70%),
-                radial-gradient(ellipse 40% 30% at 80% 20%, rgba(124,106,175,0.03) 0%, transparent 70%); }
+  /* Each screen absolutely fills #app */
+  .screen {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .screen.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+  }
 
-  /* ═══ SCREEN 1: NOW PLAYING — v3 split ═══ */
-  #s-np { display: flex; align-items: center; justify-content: center; background: var(--bg); min-height: 100%; height: 100%; width: 100%; }
+  /* Transition overlays */
+  #fadeOv { position: fixed; inset: 0; background: var(--bg); opacity: 0; z-index: 200; pointer-events: none; }
+  #wipeOv { position: fixed; inset: 0; background: var(--accent); transform: translateX(-101%); z-index: 200; pointer-events: none; }
 
-  /* left */
-  .np-left { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-  .np-pr { position: relative; flex-shrink: 0; }
-  .np-pr img { width: 100%; height: var(--poster-h); object-fit: cover; object-position: top; display: block; }
-  .np-pr::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: clamp(30px,7vh,70px); background: linear-gradient(transparent, var(--surface)); }
-  .np-live { position: absolute; top: clamp(6px,1vh,10px); left: clamp(6px,1vw,10px); z-index: 2;
-    display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.1); border-radius: 100px;
-    padding: 3px 8px 3px 6px; font-size: var(--fs-xxs); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+  /* ambient */
+  .amb { position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(200,169,126,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 30% at 80% 20%, rgba(124,106,175,0.03) 0%, transparent 70%); }
+
+  /* ════════════════════════════════════════
+     SCREEN 1 – NOW PLAYING  (v3 split)
+  ════════════════════════════════════════ */
+  #s-np {
+    display: grid;
+    /* Left panel: fluid 22vw, capped 260–360px. Right: fills rest. */
+    grid-template-columns: clamp(240px, 22vw, 340px) 1fr;
+    background: var(--bg);
+  }
+
+  /* ── left panel ── */
+  .np-left {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .np-poster-region { position: relative; flex-shrink: 0; }
+  .np-poster-region img {
+    width: 100%;
+    height: clamp(160px, 28vh, 320px);
+    object-fit: cover;
+    object-position: top;
+    display: block;
+  }
+  .np-poster-region::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: clamp(40px, 8vh, 80px);
+    background: linear-gradient(transparent, var(--surface));
+    pointer-events: none;
+  }
+
+  .np-live {
+    position: absolute; top: clamp(6px,1vh,12px); left: clamp(6px,1vw,12px); z-index: 2;
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 100px;
+    padding: 3px 9px 3px 7px;
+    font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent);
+  }
   .live-dot { width: 5px; height: 5px; background: var(--red); border-radius: 50%; flex-shrink: 0; animation: pulse 1.8s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.65)} }
-  .np-qb { position: absolute; top: clamp(6px,1vh,10px); right: clamp(6px,1vw,10px); z-index: 2;
-    background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); border: 1px solid rgba(200,169,126,0.3); border-radius: 4px;
-    padding: 2px 7px; font-size: var(--fs-xxs); font-weight: 600; letter-spacing: .08em; color: var(--accent); }
 
-  .np-scroll { padding: var(--pad-y) var(--pad-x); flex: 1; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: var(--gap); }
+  .np-qb {
+    position: absolute; top: clamp(6px,1vh,12px); right: clamp(6px,1vw,12px); z-index: 2;
+    background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
+    border: 1px solid rgba(200,169,126,0.3); border-radius: 4px;
+    padding: 2px 7px;
+    font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .08em; color: var(--accent);
+  }
+
+  .np-scroll {
+    padding: clamp(8px,1.2vh,16px) clamp(10px,1.2vw,18px);
+    flex: 1; overflow-y: auto; scrollbar-width: none;
+    display: flex; flex-direction: column;
+    gap: clamp(6px,0.9vh,11px);
+  }
   .np-scroll::-webkit-scrollbar { display: none; }
 
-  .np-title { font-family: 'DM Serif Display', serif; font-size: var(--fs-title); line-height: 1.15; }
-  .np-meta  { font-size: var(--fs-xxs); color: var(--muted); }
+  .np-title { font-family: 'DM Serif Display', serif; font-size: clamp(1rem,1.8vw,1.55rem); line-height: 1.15; }
+  .np-meta  { font-size: clamp(7px,0.65vw,10px); color: var(--muted); }
 
   .np-ratings { display: flex; gap: clamp(3px,0.4vw,6px); flex-wrap: wrap; }
-  .rpill { display: flex; align-items: center; gap: 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px; font-size: var(--fs-xxs); font-weight: 600; }
-  .rpill .rl { font-size: calc(var(--fs-xxs) - 1px); font-weight: 500; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .rpill { display: flex; align-items: center; gap: 4px; background: var(--surf2); border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px; font-size: clamp(7px,0.65vw,9px); font-weight: 600; }
+  .rpill .rl { font-size: clamp(6px,0.58vw,8px); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
 
+  .prog-wrap { display: flex; flex-direction: column; gap: 5px; }
   .prog-track { height: 2px; background: var(--muted2); border-radius: 2px; overflow: hidden; }
   .prog-fill  { height: 100%; background: linear-gradient(90deg, var(--accent), #e8c99a); border-radius: 2px; transition: width 1s linear; }
-  .prog-times { display: flex; justify-content: space-between; font-size: var(--fs-xxs); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .prog-times { display: flex; justify-content: space-between; font-size: clamp(7px,0.65vw,9px); color: var(--muted); font-variant-numeric: tabular-nums; }
 
-  .watcher { display: flex; align-items: center; gap: 7px; padding: clamp(4px,0.7vh,8px) clamp(6px,0.7vw,10px);
-    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--fs-xxs); color: var(--muted); }
-  .avatar { width: clamp(16px,1.8vh,24px); height: clamp(16px,1.8vh,24px); border-radius: 50%; background: linear-gradient(135deg,#7c6aaf,#c8a97e);
-    display: flex; align-items: center; justify-content: center; font-size: calc(var(--fs-xxs) - 1px); font-weight: 700; color: white; flex-shrink: 0; }
+  .watcher {
+    display: flex; align-items: center; gap: 7px;
+    padding: clamp(5px,0.7vh,9px) clamp(6px,0.7vw,10px);
+    background: var(--surf2); border: 1px solid var(--border); border-radius: clamp(4px,0.5vw,7px);
+    font-size: clamp(7px,0.65vw,10px); color: var(--muted);
+  }
+  .avatar {
+    width: clamp(18px,1.9vh,26px); height: clamp(18px,1.9vh,26px); border-radius: 50%;
+    background: linear-gradient(135deg,#7c6aaf,#c8a97e);
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(8px,0.75vw,10px); font-weight: 700; color: white; flex-shrink: 0;
+  }
 
   .file-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(3px,0.4vw,6px); }
-  .fchip { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: clamp(3px,0.5vh,6px) clamp(5px,0.5vw,8px); }
-  .fchip .fl { font-size: calc(var(--fs-xxs) - 1px); color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: block; margin-bottom: 1px; }
-  .fchip .fv { font-size: var(--fs-xxs); font-weight: 600; }
+  .fchip { background: var(--surf2); border: 1px solid var(--border); border-radius: 4px; padding: clamp(3px,0.5vh,6px) clamp(5px,0.5vw,8px); }
+  .fchip .fl { font-size: clamp(6px,0.58vw,8px); color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: block; margin-bottom: 1px; }
+  .fchip .fv { font-size: clamp(7px,0.65vw,9px); font-weight: 600; }
 
-  .overview { font-size: var(--fs-xxs); color: var(--muted); line-height: 1.6; display: -webkit-box; line-clamp: 3; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .np-overview { font-size: clamp(7px,0.65vw,10px); color: var(--muted); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
-  .slabel { font-size: calc(var(--fs-xxs) - 1px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); }
+  .slabel { font-size: clamp(6px,0.58vw,8px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); }
   .cast-row { display: flex; gap: clamp(4px,0.5vw,8px); overflow-x: auto; scrollbar-width: none; }
   .cast-row::-webkit-scrollbar { display: none; }
-  .cast-card { flex-shrink: 0; text-align: center; width: clamp(32px,3.2vw,48px); }
-  .cast-card img { width: clamp(28px,2.8vw,42px); height: clamp(28px,2.8vw,42px); border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 3px; border: 1.5px solid var(--border); background: var(--surface2); }
-  .cast-card .cn { font-size: calc(var(--fs-xxs) - 1px); color: var(--muted); line-height: 1.3; }
+  .cast-card { flex-shrink: 0; text-align: center; width: clamp(34px,3.2vw,48px); }
+  .cast-card img { width: clamp(30px,2.8vw,42px); height: clamp(30px,2.8vw,42px); border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 3px; border: 1.5px solid var(--border); background: var(--surf2); }
+  .cast-card .cn { font-size: clamp(6px,0.58vw,8px); color: var(--muted); line-height: 1.3; }
 
-  /* right */
-  .np-right { display: flex; flex-direction: column; padding: var(--pad-y) var(--pad-x); gap: clamp(7px,1vh,14px); overflow: hidden; }
+  /* ── right panel ── */
+  .np-right {
+    display: flex; flex-direction: column;
+    padding: clamp(8px,1.2vh,16px) clamp(10px,1.2vw,18px);
+    gap: clamp(7px,1vh,13px);
+    overflow: hidden;
+    height: 100%;
+  }
   .rh { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-  .rh h2 { font-family: 'DM Serif Display', serif; font-size: clamp(0.85rem,1.3vw,1.15rem); font-weight: 400; }
-  .rh .sub { font-size: var(--fs-xxs); color: var(--muted); }
+  .rh h2 { font-family: 'DM Serif Display', serif; font-size: clamp(0.8rem,1.2vw,1.1rem); font-weight: 400; }
+  .rh .rsub { font-size: clamp(7px,0.65vw,9px); color: var(--muted); }
   .tabs { display: flex; gap: 3px; }
-  .tab { font-size: var(--fs-xxs); font-weight: 500; padding: 3px 9px; border-radius: 5px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .15s; }
-  .tab.active { background: var(--accent-dim); color: var(--accent); }
+  .tab { font-size: clamp(7px,0.65vw,9px); font-weight: 500; padding: 3px 8px; border-radius: 4px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .15s; }
+  .tab.active { background: var(--adim); color: var(--accent); }
 
-  .ugrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(clamp(72px,7.5vw,120px), 1fr)); gap: clamp(7px,0.9vw,13px); overflow-y: auto; scrollbar-width: none; align-content: start; flex: 1; }
+  .ugrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(clamp(68px,7vw,110px), 1fr));
+    gap: clamp(6px,0.8vw,12px);
+    overflow-y: auto; scrollbar-width: none;
+    align-content: start; flex: 1;
+  }
   .ugrid::-webkit-scrollbar { display: none; }
   .mc { transition: transform .18s; }
   .mc:hover { transform: translateY(-3px); }
   .mc:hover .cp { border-color: rgba(200,169,126,.4); }
-  .cpw { position: relative; margin-bottom: clamp(3px,0.5vh,6px); }
-  .cp { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: var(--radius); display: block; border: 1px solid var(--border); transition: border-color .18s; background: var(--surface2); }
-  .cs { position: absolute; bottom: 5px; left: 5px; font-size: calc(var(--fs-xxs) - 1px); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 5px; border-radius: 3px; }
+  .cpw { position: relative; margin-bottom: clamp(3px,0.4vh,5px); }
+  .cp { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: clamp(4px,0.4vw,7px); display: block; border: 1px solid var(--border); transition: border-color .18s; background: var(--surf2); }
+  .cs { position: absolute; bottom: 4px; left: 4px; font-size: clamp(6px,0.58vw,8px); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }
   .s-av { background: rgba(90,224,122,.15); color: var(--green); border: 1px solid rgba(90,224,122,.3); }
   .s-dl { background: rgba(200,169,126,.15); color: var(--accent); border: 1px solid rgba(200,169,126,.3); }
   .s-rq { background: rgba(100,100,200,.15); color: var(--blue); border: 1px solid rgba(100,100,200,.3); }
-  .cr { position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); border-radius: 3px; padding: 1px 4px; font-size: calc(var(--fs-xxs) - 1px); font-weight: 700; color: #f5c518; }
-  .ct { font-size: var(--fs-xs); font-weight: 500; line-height: 1.3; margin-bottom: 1px; }
-  .cm { font-size: var(--fs-xxs); color: var(--muted); }
+  .cr { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); border-radius: 3px; padding: 1px 4px; font-size: clamp(6px,0.58vw,8px); font-weight: 700; color: #f5c518; }
+  .ct { font-size: clamp(8px,0.75vw,11px); font-weight: 500; line-height: 1.3; margin-bottom: 1px; }
+  .cm { font-size: clamp(7px,0.65vw,9px); color: var(--muted); }
 
-  /* ═══ SCREEN 2: UPCOMING — FULL CINEMATIC ═══ */
-  #s-up { width: 100%; margin: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; min-height: 100%; }
-  #s-up > div { width: min(96vw, 1040px); max-width: 100%; text-align: center; }
-  #s-up h1 { font-family: 'DM Serif Display', serif; font-size: clamp(2rem,4vw,3rem); font-weight: 400; margin-bottom: 6px; }
-  #s-up .sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
-  .up-card { width: 100%; display: grid; gap: 18px; background: linear-gradient(180deg, rgba(17,17,24,0.98), rgba(20,20,28,0.98)); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: clamp(24px, 3vw, 34px); box-shadow: 0 36px 120px rgba(0,0,0,0.32); }
-  .up-poster-wrap { position: relative; width: 100%; display: grid; place-items: center; }
-  .up-poster { width: 100%; max-width: 760px; aspect-ratio: 2/3; object-fit: cover; border-radius: 18px; border: 1px solid var(--border); background: var(--surface2); box-shadow: 0 24px 80px rgba(0,0,0,0.24); }
-  .up-poster-placeholder { width: 100%; max-width: 760px; aspect-ratio: 2/3; display: grid; place-items: center; border-radius: 18px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--muted); font-size: var(--fs-xs); text-align: center; padding: 24px; box-shadow: 0 24px 80px rgba(0,0,0,0.16); }
-  .up-details { display: grid; gap: 14px; align-items: center; text-align: center; }
-  .up-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); }
-  .up-title { font-family: 'DM Serif Display', serif; font-size: clamp(2.4rem,5vw,4rem); line-height: 1.02; }
-  .up-meta { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
-  .up-overview { font-size: 13px; color: var(--muted); line-height: 1.75; display: -webkit-box; line-clamp: 4; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-  .up-badges { display: flex; flex-wrap: wrap; gap: 10px; }
-  .up-badge { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: 600; }
-  .up-status { color: var(--accent); }
-  .up-rating { color: #f5c518; }
-  .up-poster-wrap .up-label { position: absolute; bottom: 16px; left: 16px; background: rgba(0,0,0,0.72); border-radius: 8px; padding: 8px 12px; font-size: 11px; font-weight: 700; color: #fff; }
-  .up-empty { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; min-height: 320px; }
-  .big-grid, .big-card, .bst { display: none; }
-  .bp { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: var(--radius); display: block; border: 1px solid var(--border); background: var(--surface2); transition: all .2s; }
-  .bb { position: absolute; bottom: clamp(5px,0.8vh,9px); left: clamp(5px,0.5vw,8px); font-size: calc(var(--fs-xxs) - 1px); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; }
-  .br { position: absolute; top: clamp(5px,0.8vh,8px); right: clamp(5px,0.5vw,8px); background: rgba(0,0,0,.72); backdrop-filter: blur(4px); border-radius: 3px; padding: 2px 5px; font-size: calc(var(--fs-xxs) - 1px); font-weight: 700; color: #f5c518; }
-  .bt { font-size: var(--fs-xs); font-weight: 500; margin-bottom: 2px; line-height: 1.3; }
-  .bm { font-size: var(--fs-xxs); color: var(--muted); }
+  /* ════════════════════════════════════════
+     SCREEN 2 – UPCOMING  (full poster grid)
+  ════════════════════════════════════════ */
+  #s-up {
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    padding: clamp(24px,3.5vh,48px) clamp(24px,3.5vw,52px) clamp(18px,2.5vh,36px);
+    gap: clamp(14px,2vh,26px);
+    overflow: hidden;
+  }
+  .up-hdr h1 { font-family: 'DM Serif Display', serif; font-size: clamp(1.4rem,2.8vw,2.4rem); font-weight: 400; margin-bottom: 4px; }
+  .up-hdr .sub { font-size: clamp(9px,0.85vw,12px); color: var(--muted); }
+  .big-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: clamp(10px,1.4vw,18px);
+    flex: 1; overflow: hidden; align-content: start;
+  }
+  .big-card { transition: transform .2s; }
+  .big-card:hover { transform: translateY(-4px) scale(1.02); }
+  .big-card:hover .bp { border-color: rgba(200,169,126,.5); box-shadow: 0 8px 32px rgba(0,0,0,.5); }
+  .bpw { position: relative; margin-bottom: clamp(5px,0.7vh,9px); }
+  .bp { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: clamp(5px,0.5vw,9px); display: block; border: 1px solid var(--border); transition: all .2s; background: var(--surf2); }
+  .bb { position: absolute; bottom: 6px; left: 6px; font-size: clamp(6px,0.58vw,8px); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 5px; border-radius: 3px; }
+  .br { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.72); backdrop-filter: blur(4px); border-radius: 3px; padding: 2px 5px; font-size: clamp(6px,0.58vw,8px); font-weight: 700; color: #f5c518; }
+  .bt { font-size: clamp(9px,0.85vw,12px); font-weight: 500; margin-bottom: 2px; line-height: 1.3; }
+  .bm { font-size: clamp(7px,0.65vw,9px); color: var(--muted); }
 
-  /* ═══ SCREEN 3: SPOTLIGHT — single movie hero ═══ */
-  #s-sp { width: 100%; margin: 0; position: relative; display: flex; align-items: center; justify-content: center; padding: 0 clamp(20px,4vw,40px); min-height: 100%; }
-  .sp-bg, .sp-grad { display: none; }
-  .sp-body { width: min(92vw, 860px); display: grid; gap: clamp(18px,2vw,30px); background: linear-gradient(180deg, rgba(17,17,24,0.96), rgba(20,20,28,0.96)); border: 1px solid rgba(255,255,255,0.08); border-radius: calc(var(--radius) * 1.5); padding: clamp(20px,2.5vh,30px); box-shadow: 0 36px 120px rgba(0,0,0,0.32); }
-  .sp-poster { width: 100%; max-width: 520px; aspect-ratio: 2/3; object-fit: cover; border-radius: calc(var(--radius) * 1.5); border: 1px solid var(--border); background: var(--surface2); box-shadow: 0 22px 80px rgba(0,0,0,0.28); }
-  .sp-info { display: grid; gap: clamp(12px,1.2vw,18px); align-items: center; text-align: center; }
-  .sp-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0; display: inline-flex; align-items: center; gap: 8px; }
-  .sp-eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: var(--accent); }
-  .sp-title { font-family: 'DM Serif Display', serif; font-size: clamp(2.4rem,5vw,4.2rem); line-height: 1.02; margin-bottom: 0; }
-  .sp-meta { font-size: 12px; color: var(--muted); letter-spacing: .03em; margin-bottom: 0; }
-  .sp-status { display: inline-flex; align-items: center; gap: 6px; background: rgba(200,169,126,0.12); border: 1px solid rgba(200,169,126,0.3); border-radius: 8px; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--accent); }
-  .sp-rats { display: flex; gap: 10px; flex-wrap: wrap; }
-  .sp-rpill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
-  .sp-rpill .srl { font-size: 9px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
-  .sp-overview { font-size: 13px; color: var(--muted); line-height: 1.75; margin-bottom: 0; }
-  .sp-cast { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .sp-cast-label { font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-right: 4px; }
-  .sp-cast img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.12); }
+  /* ════════════════════════════════════════
+     SCREEN 3 – SPOTLIGHT  (cinematic hero)
+  ════════════════════════════════════════ */
+  #s-sp { position: relative; overflow: hidden; background: var(--bg); }
 
-  /* ═══ SCREEN 4: IDLE ═══ */
-  #s-idle { width: 100%; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: var(--bg); min-height: 100%; height: 100%; }
-  .idle-card { display: grid; gap: 18px; background: linear-gradient(180deg, rgba(17,17,24,0.98), rgba(20,20,28,0.98)); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: clamp(26px, 3vw, 40px); box-shadow: 0 36px 120px rgba(0,0,0,0.32); width: 100%; }
-  .idle-clock { font-family: 'DM Serif Display', serif; font-size: clamp(4.5rem,11vw,7rem); line-height: 1; color: rgba(232,228,220,0.08); letter-spacing: -0.04em; margin-bottom: 8px; }
-  .idle-title { font-family: 'DM Serif Display', serif; font-size: clamp(1.5rem, 3vw, 2.5rem); color: var(--text); text-align: center; margin-bottom: 4px; }
-  .idle-meta { font-size: var(--fs-sm); color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
-  .idle-label { font-size: var(--fs-xxs); color: var(--muted2); letter-spacing: .15em; text-transform: uppercase; }
-  .idle-posters { display: flex; gap: 12px; margin-top: 24px; }
-  .idle-posters img { width: 64px; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; opacity: 0.18; border: 1px solid var(--border); background: var(--surface2); transition: opacity .3s; }
-  .idle-posters img:hover { opacity: 0.35; }
+  .sp-bg {
+    position: absolute; inset: -8%;
+    background-size: cover; background-position: center;
+    filter: blur(30px) brightness(0.22) saturate(1.4);
+    transform: scale(1.1); z-index: 0;
+  }
+  .sp-grad {
+    position: absolute; inset: 0; z-index: 1;
+    background:
+      linear-gradient(90deg, rgba(9,9,16,0.97) 32%, rgba(9,9,16,0.6) 62%, rgba(9,9,16,0.18) 100%),
+      linear-gradient(0deg, rgba(9,9,16,0.55) 0%, transparent 40%);
+  }
+  .sp-body {
+    position: relative; z-index: 2;
+    display: flex; align-items: center;
+    height: 100%;
+    padding: 0 clamp(32px,6vw,80px);
+    gap: clamp(28px,5vw,64px);
+  }
+  .sp-poster {
+    width: clamp(120px,14vw,240px); flex-shrink: 0;
+    aspect-ratio: 2/3; object-fit: cover;
+    border-radius: clamp(8px,0.8vw,14px);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.75);
+    background: var(--surf2);
+  }
+  .sp-info { max-width: clamp(280px,42vw,520px); }
+  .sp-eye {
+    font-size: clamp(8px,0.75vw,10px); font-weight: 600; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: clamp(8px,1.2vh,16px);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sp-eye::before { content: ''; display: block; width: 24px; height: 1px; background: var(--accent); }
+  .sp-title { font-family: 'DM Serif Display', serif; font-size: clamp(1.8rem,3.8vw,3.6rem); line-height: 1.05; margin-bottom: clamp(4px,0.7vh,10px); }
+  .sp-meta  { font-size: clamp(9px,0.85vw,12px); color: var(--muted); margin-bottom: clamp(10px,1.5vh,18px); }
+  .sp-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(200,169,126,0.1); border: 1px solid rgba(200,169,126,0.28); border-radius: 6px;
+    padding: clamp(4px,0.6vh,7px) clamp(10px,1vw,14px);
+    font-size: clamp(9px,0.85vw,11px); font-weight: 600; color: var(--accent);
+    margin-bottom: clamp(10px,1.5vh,18px);
+  }
+  .sp-rats { display: flex; gap: clamp(6px,0.7vw,10px); margin-bottom: clamp(10px,1.5vh,18px); flex-wrap: wrap; }
+  .sp-rpill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; padding: clamp(5px,0.6vh,8px) clamp(9px,0.9vw,13px); font-size: clamp(10px,1vw,13px); font-weight: 600; }
+  .sp-rpill .srl { font-size: clamp(7px,0.65vw,9px); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .sp-ov { font-size: clamp(9px,0.9vw,13px); color: var(--muted); line-height: 1.75; margin-bottom: clamp(10px,1.5vh,20px); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .sp-cast { display: flex; gap: clamp(6px,0.7vw,10px); align-items: center; flex-wrap: wrap; }
+  .sp-cast-label { font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-right: 4px; }
+  .sp-cast img { width: clamp(26px,2.6vw,38px); height: clamp(26px,2.6vw,38px); border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.12); background: var(--surf2); }
 
-  /* ═══ PAGE DOTS ═══ */
-  .pdots { position: fixed; bottom: clamp(14px,2vh,22px); left: 50%; transform: translateX(-50%); display: flex; gap: 10px; align-items: center; z-index: 50; pointer-events: auto; }
-  .pdot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted2); transition: all .3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); }
-  .pdot.active { background: var(--accent); width: 16px; height: 16px; border-radius: 50%; }
+  /* ════════════════════════════════════════
+     SCREEN 4 – IDLE
+  ════════════════════════════════════════ */
+  #s-idle {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px; background: var(--bg);
+  }
+  .idle-clock { font-family: 'DM Serif Display', serif; font-size: clamp(4rem,11vw,8rem); line-height: 1; color: rgba(232,228,220,0.07); letter-spacing: -0.04em; margin-bottom: 8px; }
+  .idle-label { font-size: clamp(8px,0.75vw,11px); color: var(--muted2); letter-spacing: .15em; text-transform: uppercase; }
+  .idle-posters { display: flex; gap: clamp(7px,0.9vw,13px); margin-top: clamp(16px,2.5vh,28px); }
+  .idle-posters img { width: clamp(44px,4.5vw,70px); aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; opacity: 0.14; border: 1px solid var(--border); background: var(--surf2); }
 
-  /* ═══ NOW PLAYING HERO CARD ═══ */
-  .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0; width: min(98vw, 980px); max-width: 100%; padding: clamp(24px, 3vw, 40px); margin: 0 auto; min-height: 100%; justify-content: center; }
-  .live-badge { display: flex; align-items: center; gap: 6px; background: rgba(200,169,126,0.12); border: 1px solid rgba(200,169,126,0.25); border-radius: 100px; padding: 4px 12px 4px 8px; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 2rem; }
-  .live-dot { width: 7px; height: 7px; background: #e05a5a; border-radius: 50%; animation: pulse 1.8s ease-in-out infinite; }
-  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.75); } }
-  .poster-wrap { position: relative; width: min(45vw, 420px); max-width: 100%; margin-bottom: 2rem; }
-  .poster-shadow { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); width: min(38vw, 320px); height: clamp(24px, 4vw, 32px); background: rgba(200,169,126,0.18); filter: blur(20px); border-radius: 50%; }
-  .poster { width: 100%; aspect-ratio: 2/3; border-radius: 10px; object-fit: cover; display: block; box-shadow: 0 2px 4px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06); animation: floatIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
-  @keyframes floatIn { from { opacity: 0; transform: translateY(18px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
-  .meta { text-align: center; animation: floatIn 0.9s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .title { font-family: 'DM Serif Display', serif; font-size: clamp(2rem, 4.2vw, 3rem); line-height: 1.15; color: var(--text); margin-bottom: 0.35rem; letter-spacing: -0.01em; }
-  .year { font-size: 13px; color: var(--muted); font-weight: 400; letter-spacing: 0.04em; margin-bottom: 1rem; }
-  .progress-wrap { width: 100%; margin-bottom: 0.55rem; }
-  .progress-track { height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; position: relative; }
-  .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent) 0%, #e8c99a 100%); border-radius: 2px; transition: width 1s linear; }
-  .progress-times { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 6px; font-variant-numeric: tabular-nums; }
-  .watcher { display: flex; align-items: center; gap: 8px; margin-top: 1.5rem; padding: 8px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; font-size: 12px; color: var(--muted); }
-  .avatar { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #7c6aaf, #c8a97e); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: white; flex-shrink: 0; }
-  .idle-screen { display: none; flex-direction: column; align-items: center; gap: 1rem; opacity: 0.35; z-index: 1; position: relative; }
-  .idle-icon { width: 48px; height: 48px; opacity: 0.4; }
-  .idle-label { font-size: 13px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+  /* ════════════════════════════════════════
+     PAGE DOTS
+  ════════════════════════════════════════ */
+  #pdots {
+    position: fixed; bottom: clamp(10px,1.8vh,18px); left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; align-items: center; z-index: 300; pointer-events: none;
+  }
+  .pdot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); transition: all .3s; }
+  .pdot.active { background: var(--accent); width: 14px; border-radius: 3px; }
 </style>
 </head>
 <body>
-<div class="ambient"></div>
-<div class="pdots" id="pdots"></div>
-<div class="sc">
-  <div class="wipe-ov" id="wipeOv"></div>
-  <div class="fade-ov" id="fadeOv"></div>
+<div class="amb"></div>
+<div id="pdots"></div>
+<div id="app">
+  <div id="fadeOv"></div>
+  <div id="wipeOv"></div>
 
-  <!-- ═══ NOW PLAYING ═══ -->
+  <!-- ════ SCREEN 1: NOW PLAYING ════ -->
   <div class="screen active" id="s-np">
-    <div class="stage">
-      <div class="live-badge">
-        <span class="live-dot"></span>
-        Now Playing
-      </div>
-
-      <div class="poster-wrap">
-        <img id="npPoster" class="poster" src="" alt="Now playing poster">
-        <div class="poster-shadow"></div>
-      </div>
-
-      <div class="meta">
-        <div class="title" id="npTitle">—</div>
-        <div class="year" id="npMeta">—</div>
+    <div class="np-left">
+      <div class="np-poster-region">
+        <div class="np-live"><span class="live-dot"></span>Now Playing</div>
         <div class="np-qb" id="npQb" style="display:none"></div>
-        <div class="file-grid" id="npFile" style="display:none"></div>
-
-        <div class="progress-wrap">
-          <div class="progress-track"><div class="progress-fill" id="npProg" style="width:0%"></div></div>
-          <div class="progress-times"><span id="npElapsed">0:00:00</span><span id="npDur">0:00:00</span></div>
-        </div>
-        <div class="overview" id="npOv"></div>
+        <img id="npPoster" src="" alt="">
       </div>
-
-      <div class="watcher">
-        <div class="avatar" id="npAv">?</div>
+      <div class="np-scroll">
         <div>
-          <div id="npUser">—</div>
-          <div id="npDev">—</div>
+          <div class="np-title" id="npTitle">—</div>
+          <div class="np-meta"  id="npMeta"></div>
+        </div>
+        <div class="np-ratings" id="npRats"></div>
+        <div class="prog-wrap">
+          <div class="prog-track"><div class="prog-fill" id="npProg" style="width:0%"></div></div>
+          <div class="prog-times"><span id="npElapsed">0:00:00</span><span id="npDur">0:00:00</span></div>
+        </div>
+        <div class="watcher">
+          <div class="avatar" id="npAv">?</div>
+          <div style="flex:1;min-width:0;overflow:hidden">
+            <div style="color:var(--text);font-weight:600;font-size:clamp(8px,0.75vw,10px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="npUser">—</div>
+            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="npDev">—</div>
+          </div>
+        </div>
+        <div class="file-grid" id="npFile" style="display:none"></div>
+        <div class="np-overview" id="npOv"></div>
+        <div id="npCastWrap" style="display:none">
+          <div class="slabel" style="margin-bottom:clamp(4px,0.5vh,7px)">Top Cast</div>
+          <div class="cast-row" id="npCast"></div>
         </div>
       </div>
-      <div id="npCastWrap" style="display:none"><div class="cast-row" id="npCast"></div></div>
+    </div>
+
+    <div class="np-right">
+      <div class="rh">
+        <div>
+          <h2>Up Next</h2>
+          <div class="rsub" id="npSub">Your library</div>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-tab="all">All</button>
+          <button class="tab" data-tab="movies">Movies</button>
+          <button class="tab" data-tab="tv">TV</button>
+        </div>
+      </div>
+      <div class="ugrid" id="npGrid"></div>
     </div>
   </div>
 
-  <!-- ═══ UPCOMING ═══ -->
+  <!-- ════ SCREEN 2: UPCOMING ════ -->
   <div class="screen" id="s-up">
-    <div><h1>Coming Up</h1><div class="sub" id="upSub">Your library</div></div>
-    <div class="up-card" id="upCard">
-      <div class="up-empty">Loading a single recommendation...</div>
+    <div class="up-hdr">
+      <h1>Coming Up</h1>
+      <div class="sub" id="upSub">Your library</div>
     </div>
+    <div class="big-grid" id="upGrid"></div>
   </div>
 
-  <!-- ═══ SPOTLIGHT ═══ -->
+  <!-- ════ SCREEN 3: SPOTLIGHT ════ -->
   <div class="screen" id="s-sp">
     <div class="sp-bg" id="spBg"></div>
     <div class="sp-grad"></div>
     <div class="sp-body">
       <img class="sp-poster" id="spPoster" src="" alt="">
       <div class="sp-info">
-        <div class="sp-eyebrow" id="spEye">From Your Library</div>
-        <div class="sp-title"   id="spTitle">—</div>
-        <div class="sp-meta"    id="spMeta"></div>
-        <div class="sp-status"  id="spStatus" style="display:none"></div>
-        <div class="sp-rats"    id="spRats"></div>
-        <div class="sp-overview" id="spOv"></div>
-        <div class="sp-cast"    id="spCast" style="display:none"></div>
+        <div class="sp-eye" id="spEye">From Your Library</div>
+        <div class="sp-title"  id="spTitle">—</div>
+        <div class="sp-meta"   id="spMeta"></div>
+        <div class="sp-status" id="spStatus" style="display:none"></div>
+        <div class="sp-rats"   id="spRats"></div>
+        <div class="sp-ov"     id="spOv"></div>
+        <div class="sp-cast"   id="spCast" style="display:none"></div>
       </div>
     </div>
   </div>
 
-  <!-- ═══ IDLE ═══ -->
+  <!-- ════ SCREEN 4: IDLE ════ -->
   <div class="screen" id="s-idle">
-    <div class="idle-card">
-      <div class="idle-clock" id="clock">--:--</div>
-      <div class="idle-title" id="idleTitle">Browse your collection</div>
-      <div class="idle-meta" id="idleMeta">A random movie or TV show</div>
-      <div class="idle-label">Nothing playing</div>
-      <div class="idle-posters" id="idlePosts"></div>
-    </div>
+    <div class="idle-clock" id="clock">--:--</div>
+    <div class="idle-label">Nothing playing</div>
+    <div class="idle-posters" id="idlePosts"></div>
   </div>
+
 </div>
 
 <script>
+// ─── constants ───────────────────────────────────────────────────
+const IDS    = ['s-np','s-up','s-sp','s-idle'];
+const ELS    = IDS.map(id => document.getElementById(id));
+const fadeOv = document.getElementById('fadeOv');
+const wipeOv = document.getElementById('wipeOv');
+const CLS    = { downloading:'s-dl', available:'s-av', requested:'s-rq' };
+
 // ─── state ───────────────────────────────────────────────────────
+let cur=3, locked=false, sTmr=null, pTmr=null, progTmr=null, xing=false, state=null;
+let anim='fade', scrDur=15000, pollMs=5000, lPos=0, lDur=0, tab='all';
+
+// ─── logging ─────────────────────────────────────────────────────
 const LOG = {
-  info: (...args) => console.info('[Jellyfin UI]', ...args),
-  warn: (...args) => console.warn('[Jellyfin UI]', ...args),
-  error: (...args) => console.error('[Jellyfin UI]', ...args),
+  info:  (...a) => console.info( `%c[Postarr INFO ]`, 'color:#c8a97e', ...a),
+  warn:  (...a) => console.warn( `%c[Postarr WARN ]`, 'color:#f97316', ...a),
+  error: (...a) => console.error(`%c[Postarr ERROR]`, 'color:#e05a5a', ...a),
+  debug: (...a) => console.debug(`%c[Postarr DEBUG]`, 'color:#6b6878', ...a),
 };
 
-const IDS     = ['s-np','s-up','s-sp','s-idle'];
-const ELS     = IDS.map(id => document.getElementById(id));
-const fadeOv  = document.getElementById('fadeOv');
-const wipeOv  = document.getElementById('wipeOv');
-let cur=3, locked=false, sTmr=null, pTmr=null, progTmr=null, xing=false, state=null;
-let anim='fade', dur=15000, poll=5000, lPos=0, lDur=0, tab='all';
-let spotlightDeck = [];
-let spotlightDeckKey = '';
-let spotlightDeckPos = 0;
-
 // ─── clock ───────────────────────────────────────────────────────
-function tick(){const n=new Date();document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
-tick(); setInterval(tick,15000);
-
-function fms(ms){if(!ms||ms<=0)return'0:00:00';const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
-
-function shuffleArray(arr){
-  for(let i=arr.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [arr[i],arr[j]]=[arr[j],arr[i]];
-  }
-  return arr;
+function tick() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
 }
+tick(); setInterval(tick, 15000);
 
-function getItemKey(item){
-  return [item.title||'', item.year||'', item.source||'', item.radarrId||item.tmdbId||item.imdbId||item.posterUrl||''].filter(Boolean).join('||');
-}
-
-function buildSpotlightDeck(items){
-  const list = items.filter(i=>i.status==='available' && i.title).map(i=>({
-    key:getItemKey(i),
-    item:i,
-  }));
-  const key = list.map(i=>i.key).join('|');
-  if(spotlightDeckKey !== key){
-    spotlightDeckKey = key;
-    spotlightDeck = shuffleArray(list.slice());
-    spotlightDeckPos = 0;
-  }
-  return spotlightDeck;
-}
-
-function pickNextSpotlightItem(){
-  if(!state) return null;
-  const allItems = items(state,'all');
-  const deck = buildSpotlightDeck(allItems);
-  if(!deck.length) return null;
-  if(spotlightDeckPos >= deck.length) spotlightDeckPos = 0;
-  return deck[spotlightDeckPos++].item;
+function fms(ms) {
+  if (!ms || ms <= 0) return '0:00:00';
+  const s = Math.floor(ms/1000), h = Math.floor(s/3600),
+        m = Math.floor((s%3600)/60), sc = s%60;
+  return `${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;
 }
 
 // ─── transitions ─────────────────────────────────────────────────
-function show(i){ELS.forEach((e,j)=>e.classList.toggle('active',j===i));cur=i;dots();}
-function goTo(i,imm=false){
-  if(i===cur)return;
-  if(imm||xing){show(i);return;}
-  xing=true;
-  if(anim==='slide')slide(cur,i);
-  else if(anim==='wipe')wipe(cur,i);
-  else fade(cur,i);
+function show(i) {
+  ELS.forEach((e,j) => e.classList.toggle('active', j===i));
+  cur = i;
+  dots();
 }
-function fade(f,t){
-  if(t===2 && state?.spotlight?.status==='available'){
-    state.activeSpotlight = pickNextSpotlightItem();
-  }
-  fadeOv.style.cssText='transition:none;opacity:0'; fadeOv.offsetHeight;
-  fadeOv.style.cssText='transition:opacity 0.38s ease;opacity:1';
-  setTimeout(()=>{show(t);fadeOv.style.cssText='transition:opacity 0.42s ease;opacity:0';setTimeout(()=>{xing=false;},430);},390);
+
+function goTo(i, imm=false) {
+  if (i === cur) return;
+  if (imm || xing) { show(i); return; }
+  xing = true;
+  if      (anim==='slide') doSlide(cur, i);
+  else if (anim==='wipe')  doWipe(cur, i);
+  else                     doFade(cur, i);
 }
-function slide(f,t){
-  const d=t>f?1:-1,inc=ELS[t],out=ELS[f];
-  inc.style.cssText=`transform:translateX(${d*100}%);opacity:1;visibility:visible;transition:none`;
+
+function doFade(f, t) {
+  fadeOv.style.cssText = 'transition:none;opacity:0'; fadeOv.offsetHeight;
+  fadeOv.style.cssText = 'transition:opacity 0.38s ease;opacity:1';
+  setTimeout(() => {
+    show(t);
+    fadeOv.style.cssText = 'transition:opacity 0.42s ease;opacity:0';
+    setTimeout(() => { xing = false; }, 430);
+  }, 390);
+}
+
+function doSlide(f, t) {
+  const d = t > f ? 1 : -1, inc = ELS[t], out = ELS[f];
+  inc.style.cssText = `transform:translateX(${d*100}%);opacity:1;visibility:visible;transition:none`;
   inc.offsetHeight;
-  inc.style.transition=out.style.transition='transform 0.52s cubic-bezier(0.4,0,0.2,1)';
-  inc.style.transform='translateX(0)'; out.style.transform=`translateX(${-d*100}%)`;
-  setTimeout(()=>{[inc,out].forEach(e=>{e.style.cssText='';});show(t);xing=false;},540);
+  inc.style.transition = out.style.transition = 'transform 0.52s cubic-bezier(0.4,0,0.2,1)';
+  inc.style.transform = 'translateX(0)';
+  out.style.transform = `translateX(${-d*100}%)`;
+  setTimeout(() => { [inc,out].forEach(e => { e.style.cssText=''; }); show(t); xing = false; }, 540);
 }
-function wipe(f,t){
-  wipeOv.style.cssText='transition:none;transform:translateX(-101%)'; wipeOv.offsetHeight;
-  wipeOv.style.transition='transform 0.36s cubic-bezier(0.4,0,0.2,1)'; wipeOv.style.transform='translateX(0)';
-  setTimeout(()=>{show(t);wipeOv.style.transform='translateX(101%)';setTimeout(()=>{wipeOv.style.cssText='transform:translateX(-101%)';xing=false;},370);},370);
+
+function doWipe(f, t) {
+  wipeOv.style.cssText = 'transition:none;transform:translateX(-101%)'; wipeOv.offsetHeight;
+  wipeOv.style.transition = 'transform 0.36s cubic-bezier(0.4,0,0.2,1)';
+  wipeOv.style.transform = 'translateX(0)';
+  setTimeout(() => {
+    show(t);
+    wipeOv.style.transform = 'translateX(101%)';
+    setTimeout(() => { wipeOv.style.cssText = 'transform:translateX(-101%)'; xing = false; }, 370);
+  }, 370);
 }
 
 // ─── rotation ────────────────────────────────────────────────────
-function rot(s){
+function getRotation(s) {
   if (s.nowPlaying) return [0];
-  const l=[];
-  if(s.downloading?.length||s.requested?.length||s.available?.length) l.push(1);
-  if(s.spotlight) l.push(2);
-  if (l.length > 1) l.sort(() => Math.random() - 0.5);
-  return l.length?l:[3];
-}
-function startRot(){
-  clearTimeout(sTmr); if(locked)return;
-  sTmr=setTimeout(()=>{
-    if(locked||!state)return;
-    const r=rot(state), next=r[(r.indexOf(cur)+1)%r.length];
-    anim=['fade','slide','wipe'][Math.floor(Date.now()/dur)%3];
-    goTo(next); startRot();
-  },dur);
+  const l = [];
+  if (s.downloading?.length || s.requested?.length || s.available?.length) l.push(1);
+  if (s.spotlight) l.push(2);
+  return l.length ? l : [3];
 }
 
-// ─── dots ─────────────────────────────────────────────────────────
-const SCREEN_LABELS = ['Now Playing','Upcoming','Spotlight','Idle'];
-function dots(){
-  const r=state?rot(state):[3];
-  document.getElementById('pdots').innerHTML=r.map(i=>`<button type="button" class="pdot${i===cur?' active':''}" data-index="${i}" title="${SCREEN_LABELS[i]}"></button>`).join('');
+function startRot() {
+  clearTimeout(sTmr);
+  if (locked) return;
+  sTmr = setTimeout(() => {
+    if (locked || !state) return;
+    const r    = getRotation(state);
+    const next = r[(r.indexOf(cur) + 1) % r.length];
+    anim = ['fade','slide','wipe'][Math.floor(Date.now() / scrDur) % 3];
+    goTo(next);
+    startRot();
+  }, scrDur);
 }
 
-// ─── render helpers ───────────────────────────────────────────────
-const CLS={downloading:'s-dl',available:'s-av',requested:'s-rq'};
+// ─── page dots ───────────────────────────────────────────────────
+function dots() {
+  const r = state ? getRotation(state) : [3];
+  document.getElementById('pdots').innerHTML =
+    r.map(i => `<div class="pdot${i===cur?' active':''}"></div>`).join('');
+}
 
-function items(s,t){
-  const all=[
-    ...(s.downloading||[]).map(d=>({title:d.title,year:'',posterUrl:d.posterUrl||null,status:'downloading',label:`${d.pct}%↓`,rating:null,type:'movie',source:'radarr'})),
-    ...(s.available||[]).map(m=>({title:m.title,year:m.year,posterUrl:m.posterUrl,status:'available',label:'Available',rating:m.rating||null,type:m.type||'movie',source:'library'})),
-    ...(s.requested||[]).map(r=>({title:r.title,year:r.year,posterUrl:r.posterUrl,status:'requested',label:'Requested',rating:null,type:r.type||'movie',source:'seer'})),
+// ─── item helpers ─────────────────────────────────────────────────
+function getItems(s, t) {
+  const all = [
+    ...(s.downloading||[]).map(d => ({ title:d.title, year:'', posterUrl:d.posterUrl||null, status:'downloading', label:`${d.pct}%↓`, rating:null, type:'movie' })),
+    ...(s.available||[]).map(m   => ({ title:m.title, year:m.year, posterUrl:m.posterUrl, status:'available', label:'Available', rating:m.rating||null, type:m.type||'movie' })),
+    ...(s.requested||[]).map(r   => ({ title:r.title, year:r.year, posterUrl:r.posterUrl, status:'requested', label:'Requested', rating:null, type:r.type||'movie' })),
   ];
-  if(t==='movies')return all.filter(i=>i.type!=='series');
-  if(t==='tv')return all.filter(i=>i.type==='series');
+  if (t==='movies') return all.filter(i => i.type !== 'series');
+  if (t==='tv')     return all.filter(i => i.type === 'series');
   return all;
 }
 
-function svcSub(s){
-  const v=[];
-  if(s.services?.radarr)v.push('Radarr');
-  if(s.services?.sonarr)v.push('Sonarr');
-  if(s.services?.seer)v.push('Seer');
-  return v.length?`Your library · ${v.join(' · ')}`:'Your library';
+function svcLabel(s) {
+  const v = [];
+  if (s.services?.radarr) v.push('Radarr');
+  if (s.services?.sonarr) v.push('Sonarr');
+  if (s.services?.seer)   v.push('Seer');
+  return v.length ? `Your library · ${v.join(' · ')}` : 'Your library';
 }
 
-function card(item,cls,rCls){
-  return`<div class="${cls}"><div class="${rCls}">
-    <img class="${cls==='mc'?'cp':'bp'}" src="${item.posterUrl||''}" alt="${item.title}" onerror="this.style.opacity=0.15">
-    <div class="${cls==='mc'?'cs':'bb'} ${CLS[item.status]}">${item.label}</div>
-    ${item.rating?`<div class="${cls==='mc'?'cr':'br'}">★${parseFloat(item.rating).toFixed(1)}</div>`:''}
-  </div>
-  <div class="${cls==='mc'?'ct':'bt'}">${item.title}</div>
-  <div class="${cls==='mc'?'cm':'bm'}">${item.year||''}</div></div>`;
-}
+// ─── render: now playing (left panel) ────────────────────────────
+function renderNP(np) {
+  LOG.info('Rendering Now Playing:', np.title);
 
-// ─── render: now playing ─────────────────────────────────────────
-function renderNP(np){
-  if(np.posterUrl)document.getElementById('npPoster').src=np.posterUrl;
-  document.getElementById('npTitle').textContent=np.title||'—';
-  const runtime = np.durationMs ? `${Math.floor(np.durationMs/3600000)}h ${Math.round((np.durationMs%3600000)/60000)}m` : null;
-  document.getElementById('npMeta').textContent=[np.year, np.meta?.director, runtime].filter(Boolean).join(' · ');
+  if (np.posterUrl) document.getElementById('npPoster').src = np.posterUrl;
+
+  document.getElementById('npTitle').textContent = np.title || '—';
+  const meta = [np.year, np.officialRating, np.genres].filter(Boolean).join(' · ');
+  document.getElementById('npMeta').textContent = meta;
 
   // quality badge
-  const qb=document.getElementById('npQb');
-  if(qb){
-    if(np.fileDetails){
-      const fd=np.fileDetails,p=[fd.resolution,fd.hdr,fd.audioCodec].filter(Boolean);
-      if(p.length){qb.textContent=p.join(' · ');qb.style.display='';}
-      else qb.style.display='none';
-    } else {
-      qb.style.display='none';
-    }
-  }
+  const qb = document.getElementById('npQb');
+  if (np.fileDetails) {
+    const p = [np.fileDetails.resolution, np.fileDetails.hdr, np.fileDetails.audioCodec].filter(Boolean);
+    if (p.length) { qb.textContent = p.join(' · '); qb.style.display = ''; }
+    else qb.style.display = 'none';
+  } else qb.style.display = 'none';
 
   // ratings
-  const re=document.getElementById('npRats'); if(re) { re.innerHTML=''; const sc=np.communityRating||np.meta?.voteAverage; if(sc)re.innerHTML=`<div class="rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sc).toFixed(1)}</span><span class="rl">Rating</span></div>`; }
+  const re = document.getElementById('npRats');
+  re.innerHTML = '';
+  const sc = np.communityRating || np.meta?.voteAverage;
+  if (sc) re.innerHTML = `<div class="rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sc).toFixed(1)}</span><span class="rl">Rating</span></div>`;
 
   // progress
-  lPos=np.positionMs||0; lDur=np.durationMs||0;
-  const pct=lDur>0?(lPos/lDur)*100:0;
-  document.getElementById('npProg').style.width=pct+'%';
-  document.getElementById('npElapsed').textContent=fms(lPos);
-  document.getElementById('npDur').textContent=fms(lDur);
+  lPos = np.positionMs || 0;
+  lDur = np.durationMs || 0;
+  const pct = lDur > 0 ? (lPos / lDur) * 100 : 0;
+  document.getElementById('npProg').style.width     = pct + '%';
+  document.getElementById('npElapsed').textContent  = fms(lPos);
+  document.getElementById('npDur').textContent      = fms(lDur);
 
   // watcher
-  const userName = np.userName || 'Someone';
-  document.getElementById('npUser').textContent = `${userName} is watching`;
-  document.getElementById('npDev').textContent = `on ${np.deviceName || 'Unknown Device'}`;
-  document.getElementById('npAv').textContent = userName[0].toUpperCase();
+  document.getElementById('npUser').textContent = np.userName   || '—';
+  document.getElementById('npDev').textContent  = np.deviceName || '—';
+  document.getElementById('npAv').textContent   = (np.userName || '?')[0].toUpperCase();
 
   // file chips
-  const fe=document.getElementById('npFile');
-  if(np.fileDetails){
-    const fd=np.fileDetails;
-    const ch=[
-      fd.resolution?`<div class="fchip"><span class="fl">Resolution</span><span class="fv">${fd.resolution}</span></div>`:'',
-      fd.videoCodec?`<div class="fchip"><span class="fl">Video</span><span class="fv">${fd.videoCodec}${fd.hdr?' / '+fd.hdr:''}</span></div>`:'',
-      fd.audioCodec?`<div class="fchip"><span class="fl">Audio</span><span class="fv">${fd.audioCodec}</span></div>`:'',
-      fd.size?`<div class="fchip"><span class="fl">File Size</span><span class="fv">${fd.size}</span></div>`:'',
+  const fe = document.getElementById('npFile');
+  if (np.fileDetails) {
+    const fd = np.fileDetails;
+    const chips = [
+      fd.resolution ? `<div class="fchip"><span class="fl">Resolution</span><span class="fv">${fd.resolution}</span></div>` : '',
+      fd.videoCodec ? `<div class="fchip"><span class="fl">Video</span><span class="fv">${fd.videoCodec}${fd.hdr?' / '+fd.hdr:''}</span></div>` : '',
+      fd.audioCodec ? `<div class="fchip"><span class="fl">Audio</span><span class="fv">${fd.audioCodec}</span></div>` : '',
+      fd.size       ? `<div class="fchip"><span class="fl">File Size</span><span class="fv">${fd.size}</span></div>` : '',
     ].filter(Boolean).join('');
-    if(ch){fe.innerHTML=ch;fe.style.display='';}else fe.style.display='none';
-  }else fe.style.display='none';
+    if (chips) { fe.innerHTML = chips; fe.style.display = ''; }
+    else fe.style.display = 'none';
+  } else fe.style.display = 'none';
 
-  document.getElementById('npOv').textContent=np.overview||'';
+  // overview
+  document.getElementById('npOv').textContent = np.overview || '';
 
   // cast
-  const cw=document.getElementById('npCastWrap'),cr=document.getElementById('npCast');
-  if(np.meta?.cast?.length){
-    cr.innerHTML=np.meta.cast.map(c=>`<div class="cast-card"><img src="${c.profileUrl||''}" alt="${c.name}" onerror="this.style.display='none'"><div class="cn">${c.name.split(' ')[0]}<br>${c.name.split(' ').slice(1).join(' ')}</div></div>`).join('');
-    cw.style.display='';
-  }else cw.style.display='none';
+  const cw = document.getElementById('npCastWrap');
+  const cr = document.getElementById('npCast');
+  if (np.meta?.cast?.length) {
+    cr.innerHTML = np.meta.cast.map(c => `
+      <div class="cast-card">
+        <img src="${c.profileUrl||''}" alt="${c.name}" onerror="this.style.display='none'">
+        <div class="cn">${c.name.split(' ')[0]}<br>${c.name.split(' ').slice(1).join(' ')}</div>
+      </div>`).join('');
+    cw.style.display = '';
+  } else cw.style.display = 'none';
 }
 
-function renderUpNext(s){
-  const it=items(s,tab);
-  const npGrid = document.getElementById('npGrid');
-  if(npGrid) npGrid.innerHTML=it.slice(0,16).map(i=>card(i,'mc','cpw')).join('');
-  const sub = document.getElementById('npSub');
-  if(sub) sub.textContent=svcSub(s);
+// ─── render: up next (right panel) ───────────────────────────────
+function renderUpNext(s) {
+  const it = getItems(s, tab);
+  document.getElementById('npGrid').innerHTML = it.slice(0,20).map(i => `
+    <div class="mc">
+      <div class="cpw">
+        <img class="cp" src="${i.posterUrl||''}" alt="${i.title}" onerror="this.style.opacity=0.15">
+        <div class="cs ${CLS[i.status]}">${i.label}</div>
+        ${i.rating ? `<div class="cr">★${parseFloat(i.rating).toFixed(1)}</div>` : ''}
+      </div>
+      <div class="ct">${i.title}</div>
+      <div class="cm">${i.year||''}</div>
+    </div>`).join('');
+  document.getElementById('npSub').textContent = svcLabel(s);
 }
 
-function renderUpcoming(s){
-  const all = items(s,'all');
-  const choice = all.length ? all[Math.floor(Math.random() * all.length)] : null;
-  const container = document.getElementById('upCard');
-  document.getElementById('upSub').textContent = svcSub(s);
+// ─── render: upcoming (full grid) ────────────────────────────────
+function renderUpcoming(s) {
+  const it = getItems(s, 'all');
+  LOG.info('Rendering Upcoming:', it.length, 'items');
+  document.getElementById('upGrid').innerHTML = it.slice(0,12).map(i => `
+    <div class="big-card">
+      <div class="bpw">
+        <img class="bp" src="${i.posterUrl||''}" alt="${i.title}" onerror="this.style.opacity=0.15">
+        <div class="bb ${CLS[i.status]}">${i.label}</div>
+        ${i.rating ? `<div class="br">★${parseFloat(i.rating).toFixed(1)}</div>` : ''}
+      </div>
+      <div class="bt">${i.title}</div>
+      <div class="bm">${i.year||''}</div>
+    </div>`).join('');
+  document.getElementById('upSub').textContent = svcLabel(s);
+}
 
-  if (!choice) {
-    container.innerHTML = '<div class="up-empty">No content available right now.</div>';
-    return;
+// ─── render: spotlight ───────────────────────────────────────────
+function renderSpotlight(s) {
+  const sp = s.spotlight;
+  if (!sp) { LOG.debug('Spotlight: no item'); return; }
+  LOG.info('Rendering Spotlight:', sp.title);
+
+  document.getElementById('spTitle').textContent = sp.title || '—';
+  document.getElementById('spMeta').textContent  = [sp.year, sp.source==='sonarr' ? 'TV Series' : 'Movie'].filter(Boolean).join(' · ');
+  document.getElementById('spEye').textContent   = sp.status==='downloading' ? 'Arriving Soon' : sp.status==='requested' ? 'Requested' : 'From Your Library';
+
+  const st = document.getElementById('spStatus');
+  if (sp.status==='downloading' && sp.pct!=null) {
+    st.innerHTML = `↓ Downloading — ${sp.pct}% complete`; st.style.display = '';
+  } else if (sp.status==='available') {
+    st.innerHTML = '✓ In your library'; st.style.display = '';
+  } else st.style.display = 'none';
+
+  document.getElementById('spOv').textContent = sp.overview || '';
+
+  if (sp.posterUrl) {
+    document.getElementById('spPoster').src = sp.posterUrl;
+    document.getElementById('spBg').style.backgroundImage = `url('${sp.posterUrl}')`;
   }
 
-  const badges = [
-    `<span class="up-badge up-status">${choice.label}</span>`,
-    choice.rating ? `<span class="up-badge up-rating">★ ${parseFloat(choice.rating).toFixed(1)}</span>` : '',
-  ].filter(Boolean).join('');
+  const re = document.getElementById('spRats');
+  re.innerHTML = '';
+  if (sp.rating) re.innerHTML = `<div class="sp-rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sp.rating).toFixed(1)}</span><span class="srl">Rating</span></div>`;
 
-  container.innerHTML = `
-    <div class="up-poster-wrap">
-      ${choice.posterUrl ? `<img class="up-poster" src="${choice.posterUrl}" alt="${choice.title}">` : `<div class="up-poster-placeholder">No artwork available</div>`}
-      <div class="up-label">${choice.type === 'series' ? 'TV / Series' : 'Movie'}</div>
-    </div>
-    <div class="up-details">
-      <div class="up-eyebrow">${choice.source === 'radarr' ? 'Movies' : choice.source === 'sonarr' ? 'TV' : 'Library'}</div>
-      <div class="up-title">${choice.title}</div>
-      <div class="up-meta">${[choice.year || '', choice.source].filter(Boolean).join(' · ')}</div>
-      <div class="up-badges">${badges}</div>
-      <div class="up-overview">${choice.overview || 'A hand-picked item from your collection.'}</div>
-    </div>
-  `;
+  const ce = document.getElementById('spCast');
+  if (sp.cast?.length) {
+    ce.innerHTML = `<span class="sp-cast-label">Cast</span>` +
+      sp.cast.map(c => `<img src="${c.profileUrl||''}" alt="${c.name}" title="${c.name}" onerror="this.style.display='none'">`).join('');
+    ce.style.display = '';
+  } else ce.style.display = 'none';
 }
 
-function renderSpotlight(s){
-  let sp=s.spotlight;
-  if(!sp) return;
-  if(sp.status==='available'){
-    s.activeSpotlight = s.activeSpotlight || pickNextSpotlightItem();
-    sp = s.activeSpotlight || sp;
-  } else if(s.activeSpotlight){
-    delete s.activeSpotlight;
-  }
-  document.getElementById('spTitle').textContent=sp.title||'—';
-  document.getElementById('spMeta').textContent=[sp.year,sp.source==='sonarr'?'TV Series':'Movie'].filter(Boolean).join(' · ');
-  document.getElementById('spEye').textContent=sp.status==='downloading'?'Arriving Soon':sp.status==='requested'?'Requested':'From Your Library';
-  const st=document.getElementById('spStatus');
-  if(sp.status==='downloading'&&sp.pct!=null){st.innerHTML=`↓ Downloading — ${sp.pct}% complete`;st.style.display='';}
-  else if(sp.status==='available'){st.innerHTML='✓ In your library';st.style.display='';}
-  else st.style.display='none';
-  document.getElementById('spOv').textContent=sp.overview||'A featured selection from your collection.';
-  const posterEl = document.getElementById('spPoster');
-  if(sp.posterUrl){posterEl.src=sp.posterUrl; posterEl.alt=sp.title || 'Spotlight poster'; posterEl.style.opacity='1'; document.getElementById('spBg').style.backgroundImage=`url('${sp.posterUrl}')`;}
-  else { posterEl.src=''; posterEl.alt='No poster available'; posterEl.style.opacity='0.3'; document.getElementById('spBg').style.backgroundImage='none'; }
-  const re=document.getElementById('spRats'); re.innerHTML='';
-  if(sp.rating)re.innerHTML=`<div class="sp-rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sp.rating).toFixed(1)}</span><span class="srl">Rating</span></div>`;
-  const ce=document.getElementById('spCast');
-  if(sp.cast?.length){ce.innerHTML=`<span class="sp-cast-label">Cast</span>`+sp.cast.map(c=>`<img src="${c.profileUrl||''}" alt="${c.name}" title="${c.name}" onerror="this.style.display='none'">`).join('');ce.style.display='';}
-  else ce.style.display='none';
+// ─── render: idle ────────────────────────────────────────────────
+function renderIdle(s) {
+  const urls = [
+    ...(s.available||[]), ...(s.requested||[]), ...(s.downloading||[])
+  ].map(i => i.posterUrl).filter(Boolean).slice(0, 7);
+  document.getElementById('idlePosts').innerHTML = urls.map(u => `<img src="${u}" alt="">`).join('');
 }
 
-function renderIdle(s){
-  const items = [
-    ...(s.available||[]).map(i=>({...i, sourceLabel:'Available'})),
-    ...(s.requested||[]).map(i=>({...i, sourceLabel:'Requested'})),
-    ...(s.downloading||[]).map(i=>({...i, sourceLabel:'Downloading'})),
-  ];
-  const choice = items.length ? items[Math.floor(Math.random() * items.length)] : null;
-  if(choice){
-    document.getElementById('idleTitle').textContent = choice.title || 'Unknown title';
-    document.getElementById('idleMeta').textContent = [choice.year || '', choice.sourceLabel, choice.type === 'series' ? 'TV' : 'Movie'].filter(Boolean).join(' · ');
-  } else {
-    document.getElementById('idleTitle').textContent = 'Browse your collection';
-    document.getElementById('idleMeta').textContent = 'A random movie or TV show';
-  }
-
-  const urls = items.map(i=>i.posterUrl).filter(Boolean).slice(0,7);
-  document.getElementById('idlePosts').innerHTML = urls.map(u=>`<img src="${u}" alt="">`).join('');
+// ─── progress tick ────────────────────────────────────────────────
+function startProg() {
+  clearInterval(progTmr);
+  progTmr = setInterval(() => {
+    if (!state?.nowPlaying || state.nowPlaying.isPaused) return;
+    lPos = Math.min(lPos + 1000, lDur);
+    const pct = lDur > 0 ? (lPos / lDur) * 100 : 0;
+    document.getElementById('npProg').style.width    = pct + '%';
+    document.getElementById('npElapsed').textContent = fms(lPos);
+  }, 1000);
 }
 
-// ─── dots interaction ───────────────────────────────────────────
-document.getElementById('pdots').addEventListener('click', event => {
-  const dot = event.target.closest('.pdot');
-  if(!dot) return;
-  const idx = Number(dot.dataset.index);
-  if(Number.isFinite(idx)){ goTo(idx); }
-});
-
-// ─── tabs ────────────────────────────────────────────────────────
-document.querySelectorAll('.tab').forEach(b=>{
-  b.addEventListener('click',()=>{
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active'); tab=b.dataset.tab;
-    if(state)renderUpNext(state);
+// ─── tab switching ────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    tab = b.dataset.tab;
+    if (state) renderUpNext(state);
   });
 });
 
-// ─── progress tick ───────────────────────────────────────────────
-function startProg(){
-  clearInterval(progTmr);
-  progTmr=setInterval(()=>{
-    if(!state?.nowPlaying||state.nowPlaying.isPaused)return;
-    lPos=Math.min(lPos+1000,lDur);
-    const pct=lDur>0?(lPos/lDur)*100:0;
-    document.getElementById('npProg').style.width=pct+'%';
-    document.getElementById('npElapsed').textContent=fms(lPos);
-  },1000);
-}
-
 // ─── poll ────────────────────────────────────────────────────────
-async function pollApi(){
-  try{
-    LOG.info('polling /api/state');
-    const res=await fetch('/api/state');
-    if(!res.ok){
-      LOG.warn('poll failed', res.status, res.statusText);
-      return;
-    }
-    const ns=await res.json();
-    LOG.info('state received', {
-      nowPlaying: !!ns.nowPlaying,
+async function pollApi() {
+  try {
+    LOG.debug('Polling /api/state');
+    const res = await fetch('/api/state');
+    if (!res.ok) { LOG.warn('Poll failed:', res.status, res.statusText); return; }
+    const ns = await res.json();
+
+    LOG.info('State received', {
+      nowPlaying:  ns.nowPlaying ? `"${ns.nowPlaying.title}"` : null,
+      available:   ns.available?.length,
       downloading: ns.downloading?.length,
-      requested: ns.requested?.length,
-      available: ns.available?.length,
+      requested:   ns.requested?.length,
     });
-    const wasPlaying=!!state?.nowPlaying, isPlaying=!!ns.nowPlaying;
-    state=ns;
-    dur=(state.config?.screenDuration||15)*1000;
-    poll=(state.config?.pollInterval||5)*1000;
 
-    if(isPlaying)renderNP(state.nowPlaying);
-    renderUpNext(state); renderUpcoming(state); renderSpotlight(state); renderIdle(state); dots();
+    const wasPlaying = !!state?.nowPlaying;
+    const isPlaying  = !!ns.nowPlaying;
+    state = ns;
 
-    if(isPlaying){
+    scrDur = (state.config?.screenDuration || 15) * 1000;
+    pollMs = (state.config?.pollInterval   || 5)  * 1000;
+
+    // Render all screens with fresh data every poll
+    if (isPlaying) renderNP(state.nowPlaying);
+    renderUpNext(state);
+    renderUpcoming(state);
+    renderSpotlight(state);
+    renderIdle(state);
+    dots();
+
+    if (isPlaying) {
       startProg();
-      if(!locked){locked=true;clearTimeout(sTmr);goTo(0);}
-    }else{
+      if (!locked) {
+        LOG.info('Playback started — locking to Now Playing');
+        locked = true; clearTimeout(sTmr); goTo(0);
+      }
+    } else {
       clearInterval(progTmr);
-      if(locked){locked=false;const r=rot(state);goTo(r[0]);startRot();}
-      else if(!sTmr){const r=rot(state);goTo(r[0],true);startRot();}
+      if (locked) {
+        LOG.info('Playback stopped — unlocking, starting rotation');
+        locked = false;
+        const r = getRotation(state);
+        goTo(r[0]); startRot();
+      } else if (!sTmr) {
+        LOG.info('Boot — starting rotation');
+        const r = getRotation(state);
+        goTo(r[0], true); startRot();
+      }
     }
-  }catch(e){LOG.error('[poll]', e.message, e);}
-  finally{clearTimeout(pTmr);pTmr=setTimeout(pollApi,poll);}
+  } catch (e) {
+    LOG.error('Poll error:', e.message, e);
+  } finally {
+    clearTimeout(pTmr);
+    pTmr = setTimeout(pollApi, pollMs);
+  }
 }
 
-dots(); pollApi();
+// ─── boot ─────────────────────────────────────────────────────────
+dots();
+pollApi();
 </script>
 </body>
 </html>
