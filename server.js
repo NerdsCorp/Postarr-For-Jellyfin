@@ -4,6 +4,7 @@ const path    = require('path');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
+const APP_VERSION = require('./package.json').version || '1.0.0';
 
 // ── Config ────────────────────────────────────────────────────────
 const config = {
@@ -51,11 +52,26 @@ app.use((req, res, next) => {
 });
 
 // ── API fetch helper ──────────────────────────────────────────────
+function jellyfinHeaders(apiKey) {
+  return {
+    'X-Emby-Token': apiKey,
+    'X-MediaBrowser-Token': apiKey,
+    'Authorization': `MediaBrowser Client="Postarr", Device="Postarr Display", DeviceId="postarr-display", Version="${APP_VERSION}", Token="${apiKey}"`,
+    'Accept': 'application/json',
+  };
+}
+
+function serviceHeaders(apiKey, source) {
+  return source === 'Jellyfin'
+    ? jellyfinHeaders(apiKey)
+    : { 'X-Api-Key': apiKey, 'Accept': 'application/json' };
+}
+
 async function apiFetch(url, apiKey, source) {
   const start = Date.now();
   try {
     const res = await fetch(url, {
-      headers: { 'X-Api-Key': apiKey, 'Accept': 'application/json' },
+      headers: serviceHeaders(apiKey, source),
       timeout: 6000,
     });
     const ms = Date.now() - start;
@@ -72,6 +88,18 @@ async function apiFetch(url, apiKey, source) {
   }
 }
 
+function jfImageUrl(itemId, imageType = 'Primary', options = {}) {
+  if (!itemId) return null;
+  const params = new URLSearchParams();
+  if (options.maxHeight) params.set('maxHeight', String(options.maxHeight));
+  if (options.maxWidth) params.set('maxWidth', String(options.maxWidth));
+  if (options.quality) params.set('quality', String(options.quality));
+  if (options.tag) params.set('tag', options.tag);
+  const index = Number.isInteger(options.index) ? `/${options.index}` : '';
+  const query = params.toString();
+  return `/api/jellyfin/image/${encodeURIComponent(itemId)}/${encodeURIComponent(imageType)}${index}${query ? `?${query}` : ''}`;
+}
+
 // ── Jellyfin: active sessions ─────────────────────────────────────
 async function getActiveSessions() {
   if (!config.jellyfin.url || !config.jellyfin.apiKey) {
@@ -80,7 +108,7 @@ async function getActiveSessions() {
   }
 
   const data = await apiFetch(
-    `${config.jellyfin.url}/Sessions?ActiveWithinSeconds=30`,
+    `${config.jellyfin.url}/Sessions?ActiveWithinSeconds=60`,
     config.jellyfin.apiKey, 'Jellyfin'
   );
   if (!Array.isArray(data)) {
@@ -89,7 +117,7 @@ async function getActiveSessions() {
   }
 
   const playing = data.filter(s => s.NowPlayingItem);
-  const session = playing.find(s => !s.PlayState?.IsPaused) || null;
+  const session = playing.find(s => !s.PlayState?.IsPaused) || playing[0] || null;
 
   logger.debug('Jellyfin', `Sessions: ${data.length} total, ${playing.length} playing, locked=${!!session}`);
 
@@ -99,11 +127,23 @@ async function getActiveSessions() {
   const state         = session.PlayState || {};
   const durationTicks = item.RunTimeTicks  || 0;
   const positionTicks = state.PositionTicks || 0;
+  const season = item.ParentIndexNumber ? `S${String(item.ParentIndexNumber).padStart(2, '0')}` : '';
+  const episode = item.IndexNumber ? `E${String(item.IndexNumber).padStart(2, '0')}` : '';
+  const episodeCode = [season, episode].filter(Boolean).join('');
+  const primaryItemId = item.Type === 'Episode'
+    ? (item.SeriesId || item.ParentId || item.Id)
+    : item.Id;
+  const primaryTag = item.Type === 'Episode'
+    ? (item.SeriesPrimaryImageTag || item.ImageTags?.Primary)
+    : item.ImageTags?.Primary;
+  const backdropItemId = item.ParentBackdropItemId || item.SeriesId || item.Id;
+  const hasBackdrop = item.BackdropImageTags?.length || item.ParentBackdropImageTags?.length;
 
   const np = {
     title: item.Type === 'Episode'
-      ? `${item.SeriesName} — S${String(item.ParentIndexNumber).padStart(2,'0')}E${String(item.IndexNumber).padStart(2,'0')}`
+      ? [item.SeriesName || item.Name, episodeCode].filter(Boolean).join(' - ')
       : item.Name,
+    subtitle: item.Type === 'Episode' ? item.Name : '',
     type:           item.Type,
     year:           item.ProductionYear,
     overview:       item.Overview || '',
@@ -115,40 +155,44 @@ async function getActiveSessions() {
     durationMs:  Math.floor(durationTicks / 10000),
     positionMs:  Math.floor(positionTicks / 10000),
     progressPct: durationTicks > 0 ? Math.min(100, (positionTicks / durationTicks) * 100) : 0,
-    posterUrl:   item.Id ? `${config.jellyfin.url}/Items/${item.Id}/Images/Primary?maxHeight=600&quality=90&api_key=${config.jellyfin.apiKey}` : null,
-    backdropUrl: item.BackdropImageTags?.length ? `${config.jellyfin.url}/Items/${item.Id}/Images/Backdrop/0?maxWidth=1920&quality=80&api_key=${config.jellyfin.apiKey}` : null,
+    posterUrl:   jfImageUrl(primaryItemId, 'Primary', { maxHeight: 900, quality: 92, tag: primaryTag }),
+    backdropUrl: hasBackdrop ? jfImageUrl(backdropItemId, 'Backdrop', { index: 0, maxWidth: 1920, quality: 82 }) : null,
     userName:    session.UserName   || 'Unknown',
     deviceName:  session.DeviceName || 'Unknown Device',
     client:      session.Client     || '',
     isPaused:    !!state.IsPaused,
-    jellyfin:    { itemId: item.Id },
+    jellyfin:    { itemId: item.Id, sessionId: session.Id, primaryItemId },
   };
 
   logger.info('Jellyfin', `Now playing: "${np.title}" for ${np.userName} on ${np.deviceName} (${Math.round(np.progressPct)}%)`);
   return np;
 }
 
-// ── Jellyfin: library fallback ────────────────────────────────────
-async function getJellyfinLibrary() {
+// ── Jellyfin: movie pool for Upcoming ─────────────────────────────
+async function getJellyfinMoviePool(excludeIds = []) {
   if (!config.jellyfin.url || !config.jellyfin.apiKey) return [];
 
-  logger.debug('Jellyfin', 'Fetching library (recently added + played)');
+  logger.debug('Jellyfin', 'Fetching movie pool for Upcoming');
+  const excluded = new Set(excludeIds.filter(Boolean));
   const fields = 'Fields=PrimaryImageAspectRatio,Overview,Genres,CommunityRating,OfficialRating,ProductionYear';
-  const types  = 'IncludeItemTypes=Movie,Series&Recursive=true';
+  const types  = 'IncludeItemTypes=Movie&Recursive=true';
+  const image  = 'ImageTypes=Primary';
 
-  const [added, played] = await Promise.all([
-    apiFetch(`${config.jellyfin.url}/Items?SortBy=DateCreated&SortOrder=Descending&${types}&Limit=18&${fields}&api_key=${config.jellyfin.apiKey}`, config.jellyfin.apiKey, 'Jellyfin'),
-    apiFetch(`${config.jellyfin.url}/Items?SortBy=DatePlayed&SortOrder=Descending&${types}&Limit=6&${fields}&Filters=IsPlayed&api_key=${config.jellyfin.apiKey}`,  config.jellyfin.apiKey, 'Jellyfin'),
-  ]);
+  const data = await apiFetch(
+    `${config.jellyfin.url}/Items?SortBy=Random&${types}&${image}&Limit=24&${fields}`,
+    config.jellyfin.apiKey,
+    'Jellyfin'
+  );
 
   const seen  = new Set();
-  const items = [...(added?.Items || []), ...(played?.Items || [])].filter(i => {
+  const items = (data?.Items || []).filter(i => {
+    if (excluded.has(i.Id)) return false;
     if (seen.has(i.Id)) return false;
     seen.add(i.Id);
     return true;
   }).slice(0, 12);
 
-  logger.info('Jellyfin', `Library fallback: ${items.length} items`);
+  logger.info('Jellyfin', `Upcoming movie pool: ${items.length} items`);
 
   return items.map(i => ({
     title:    i.Name,
@@ -157,8 +201,9 @@ async function getJellyfinLibrary() {
     rating:   i.CommunityRating ? i.CommunityRating.toFixed(1) : null,
     status:   'available',
     source:   'jellyfin',
-    type:     i.Type === 'Series' ? 'series' : 'movie',
-    posterUrl:`${config.jellyfin.url}/Items/${i.Id}/Images/Primary?maxHeight=400&quality=85&api_key=${config.jellyfin.apiKey}`,
+    type:     'movie',
+    jellyfinId:i.Id,
+    posterUrl:jfImageUrl(i.Id, 'Primary', { maxHeight: 600, quality: 88, tag: i.ImageTags?.Primary }),
   }));
 }
 
@@ -308,10 +353,15 @@ app.get('/api/state', async (req, res) => {
 
     const downloading = [...radarrData.queue, ...sonarrData.queue];
     const requested   = seerData.requests;
-    let available     = radarrData.movies;
+    let available = config.jellyfin.url
+      ? await getJellyfinMoviePool([
+          session?.jellyfin?.itemId,
+          session?.jellyfin?.primaryItemId,
+        ])
+      : radarrData.movies;
 
-    if (!available.length && !requested.length && !downloading.length) {
-      available = await getJellyfinLibrary();
+    if (!available.length) {
+      available = radarrData.movies;
     }
 
     let spotlight = downloading.length
@@ -343,6 +393,43 @@ app.get('/api/config', (req, res) => {
     pollInterval: config.pollInterval, screenDuration: config.screenDuration,
     services: { jellyfin: !!config.jellyfin.url, radarr: !!config.radarr.url, sonarr: !!config.sonarr.url, seer: !!config.seer.url },
   });
+});
+
+// ── Jellyfin image proxy ──────────────────────────────────────────
+app.get('/api/jellyfin/image/:itemId/:imageType/:imageIndex?', async (req, res) => {
+  if (!config.jellyfin.url || !config.jellyfin.apiKey) return res.sendStatus(404);
+
+  const imageType = req.params.imageType;
+  if (!/^[A-Za-z]+$/.test(imageType)) return res.sendStatus(400);
+
+  const imageIndex = req.params.imageIndex;
+  const indexPath = imageIndex !== undefined ? `/${encodeURIComponent(imageIndex)}` : '';
+  const params = new URLSearchParams();
+  ['maxHeight', 'maxWidth', 'quality', 'tag'].forEach(key => {
+    if (req.query[key]) params.set(key, String(req.query[key]));
+  });
+
+  const url = `${config.jellyfin.url}/Items/${encodeURIComponent(req.params.itemId)}/Images/${encodeURIComponent(imageType)}${indexPath}${params.toString() ? `?${params}` : ''}`;
+
+  try {
+    const upstream = await fetch(url, {
+      headers: jellyfinHeaders(config.jellyfin.apiKey),
+      timeout: 8000,
+    });
+
+    if (!upstream.ok) {
+      logger.warn('Jellyfin', `Image ${imageType} for ${req.params.itemId} returned ${upstream.status}`);
+      return res.sendStatus(upstream.status === 404 ? 404 : 502);
+    }
+
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    const contentType = upstream.headers.get('content-type');
+    if (contentType) res.setHeader('Content-Type', contentType);
+    upstream.body.pipe(res);
+  } catch (err) {
+    logger.warn('Jellyfin', `Image proxy failed: ${err.message}`);
+    res.sendStatus(502);
+  }
 });
 
 // ── Static ────────────────────────────────────────────────────────

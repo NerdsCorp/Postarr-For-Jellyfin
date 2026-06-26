@@ -40,21 +40,26 @@
 
   /* ══════════════════════════════════════════
      SCREEN 1 — NOW PLAYING
-     Left: poster + metadata scroll
-     Right: single featured card from Up Next
+     Single poster + playback details
   ══════════════════════════════════════════ */
   #s-np {
     display: grid;
-    grid-template-columns: clamp(240px, 22vw, 340px) 1fr;
+    grid-template-columns: minmax(180px, clamp(220px, 34vw, 420px)) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(18px, 4vw, 68px);
+    padding: clamp(18px, 5vh, 64px) clamp(18px, 6vw, 88px);
     background: var(--bg);
+    overflow: hidden;
   }
 
-  /* left panel */
-  .np-left { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; height: 100%; }
+  .np-backdrop { position: absolute; inset: -8%; z-index: 0; background-size: cover; background-position: center; filter: blur(34px) brightness(0.18) saturate(1.25); transform: scale(1.08); opacity: .9; transition: background-image .6s ease; }
+  .np-shade { position: absolute; inset: 0; z-index: 1; background: radial-gradient(circle at 32% 50%, rgba(232,228,220,.1), transparent 30%), linear-gradient(90deg, rgba(9,9,16,.94), rgba(9,9,16,.74) 44%, rgba(9,9,16,.9)); }
 
-  .np-poster-region { position: relative; flex-shrink: 0; }
-  .np-poster-region img { width: 100%; height: clamp(160px,28vh,320px); object-fit: cover; object-position: top; display: block; }
-  .np-poster-region::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: clamp(40px,8vh,80px); background: linear-gradient(transparent, var(--surface)); pointer-events: none; }
+  .np-left { position: relative; z-index: 2; display: contents; }
+
+  .np-poster-region { position: relative; align-self: center; justify-self: center; width: min(100%, 420px); max-height: calc(100vh - clamp(36px, 10vh, 128px)); }
+  .np-poster-region img { width: 100%; max-height: calc(100vh - clamp(36px, 10vh, 128px)); aspect-ratio: 2/3; object-fit: cover; display: block; border-radius: clamp(7px, .7vw, 12px); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 24px 78px rgba(0,0,0,.72); background: var(--surf2); }
+  .np-poster-region::after { content: none; }
 
   .np-live { position: absolute; top: clamp(6px,1vh,12px); left: clamp(6px,1vw,12px); z-index: 2; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.12); border-radius: 100px; padding: 3px 9px 3px 7px; font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
   .live-dot { width: 5px; height: 5px; background: var(--red); border-radius: 50%; flex-shrink: 0; animation: pulse 1.8s ease-in-out infinite; }
@@ -62,22 +67,23 @@
 
   .np-qb { position: absolute; top: clamp(6px,1vh,12px); right: clamp(6px,1vw,12px); z-index: 2; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); border: 1px solid rgba(200,169,126,0.3); border-radius: 4px; padding: 2px 7px; font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .08em; color: var(--accent); }
 
-  .np-scroll { padding: clamp(8px,1.2vh,16px) clamp(10px,1.2vw,18px); flex: 1; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: clamp(6px,0.9vh,11px); }
+  .np-scroll { position: relative; z-index: 2; min-width: 0; max-width: 680px; max-height: calc(100vh - clamp(36px, 10vh, 128px)); overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: clamp(9px,1.25vh,16px); padding-right: 4px; }
   .np-scroll::-webkit-scrollbar { display: none; }
 
-  .np-title { font-family: 'DM Serif Display', serif; font-size: clamp(1rem,1.8vw,1.55rem); line-height: 1.15; }
-  .np-meta  { font-size: clamp(7px,0.65vw,10px); color: var(--muted); }
+  .np-title { font-family: 'DM Serif Display', serif; font-size: clamp(1.9rem,4.8vw,5rem); line-height: 1.02; overflow-wrap: anywhere; }
+  .np-subtitle { font-size: clamp(.85rem,1.3vw,1.1rem); color: var(--text); opacity: .82; line-height: 1.4; margin-top: 6px; }
+  .np-meta  { font-size: clamp(.72rem,0.95vw,.95rem); color: var(--muted); margin-top: 6px; line-height: 1.5; }
 
   .np-ratings { display: flex; gap: clamp(3px,0.4vw,6px); flex-wrap: wrap; }
-  .rpill { display: flex; align-items: center; gap: 4px; background: var(--surf2); border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px; font-size: clamp(7px,0.65vw,9px); font-weight: 600; }
+  .rpill { display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,.06); border: 1px solid var(--border); border-radius: 5px; padding: 5px 9px; font-size: clamp(.72rem,0.85vw,.9rem); font-weight: 600; }
   .rpill .rl { font-size: clamp(6px,0.58vw,8px); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
 
   .prog-wrap { display: flex; flex-direction: column; gap: 5px; }
-  .prog-track { height: 2px; background: var(--muted2); border-radius: 2px; overflow: hidden; }
+  .prog-track { height: 4px; background: var(--muted2); border-radius: 4px; overflow: hidden; }
   .prog-fill  { height: 100%; background: linear-gradient(90deg, var(--accent), #e8c99a); border-radius: 2px; transition: width 1s linear; }
-  .prog-times { display: flex; justify-content: space-between; font-size: clamp(7px,0.65vw,9px); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .prog-times { display: flex; justify-content: space-between; font-size: clamp(.7rem,0.82vw,.88rem); color: var(--muted); font-variant-numeric: tabular-nums; }
 
-  .watcher { display: flex; align-items: center; gap: 7px; padding: clamp(5px,0.7vh,9px) clamp(6px,0.7vw,10px); background: var(--surf2); border: 1px solid var(--border); border-radius: clamp(4px,0.5vw,7px); font-size: clamp(7px,0.65vw,10px); color: var(--muted); }
+  .watcher { display: flex; align-items: center; gap: 9px; padding: clamp(7px,0.9vh,11px) clamp(8px,0.9vw,13px); background: rgba(255,255,255,.06); border: 1px solid var(--border); border-radius: clamp(4px,0.5vw,7px); font-size: clamp(.72rem,0.85vw,.95rem); color: var(--muted); max-width: 420px; }
   .avatar { width: clamp(18px,1.9vh,26px); height: clamp(18px,1.9vh,26px); border-radius: 50%; background: linear-gradient(135deg,#7c6aaf,#c8a97e); display: flex; align-items: center; justify-content: center; font-size: clamp(8px,0.75vw,10px); font-weight: 700; color: white; flex-shrink: 0; }
 
   .file-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(3px,0.4vw,6px); }
@@ -85,7 +91,7 @@
   .fchip .fl { font-size: clamp(6px,0.58vw,8px); color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: block; margin-bottom: 1px; }
   .fchip .fv { font-size: clamp(7px,0.65vw,9px); font-weight: 600; }
 
-  .np-overview { font-size: clamp(7px,0.65vw,10px); color: var(--muted); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .np-overview { font-size: clamp(.78rem,1vw,1rem); color: var(--muted); line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
 
   .slabel { font-size: clamp(6px,0.58vw,8px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); }
   .cast-row { display: flex; gap: clamp(4px,0.5vw,8px); overflow-x: auto; scrollbar-width: none; }
@@ -93,65 +99,6 @@
   .cast-card { flex-shrink: 0; text-align: center; width: clamp(34px,3.2vw,48px); }
   .cast-card img { width: clamp(30px,2.8vw,42px); height: clamp(30px,2.8vw,42px); border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 3px; border: 1.5px solid var(--border); background: var(--surf2); }
   .cast-card .cn { font-size: clamp(6px,0.58vw,8px); color: var(--muted); line-height: 1.3; }
-
-  /* right panel — single featured card */
-  .np-right {
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* blurred backdrop using the featured card's poster */
-  .np-right-bg {
-    position: absolute; inset: -8%;
-    background-size: cover; background-position: center;
-    filter: blur(28px) brightness(0.18) saturate(1.3);
-    transform: scale(1.1); z-index: 0;
-    transition: background-image 0.8s ease;
-  }
-  .np-right-grad {
-    position: absolute; inset: 0; z-index: 1;
-    background: linear-gradient(135deg, rgba(9,9,16,0.5) 0%, rgba(9,9,16,0.2) 100%);
-  }
-
-  .np-featured {
-    position: relative; z-index: 2;
-    display: flex;
-    align-items: center;
-    gap: clamp(24px,3.5vw,52px);
-    padding: clamp(24px,3vw,48px);
-    max-width: 820px;
-    width: 100%;
-  }
-
-  .np-feat-poster {
-    flex-shrink: 0;
-    width: clamp(120px,13vw,200px);
-    aspect-ratio: 2/3;
-    object-fit: cover;
-    border-radius: clamp(8px,0.7vw,12px);
-    border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 20px 64px rgba(0,0,0,0.7);
-    background: var(--surf2);
-  }
-
-  .np-feat-info { flex: 1; min-width: 0; }
-
-  .np-feat-eyebrow { font-size: clamp(8px,0.7vw,10px); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: clamp(8px,1.2vh,14px); display: flex; align-items: center; gap: 8px; }
-  .np-feat-eyebrow::before { content: ''; display: block; width: 20px; height: 1px; background: var(--accent); }
-
-  .np-feat-title { font-family: 'DM Serif Display', serif; font-size: clamp(1.4rem,2.8vw,2.6rem); line-height: 1.08; margin-bottom: clamp(4px,0.6vh,8px); }
-  .np-feat-meta  { font-size: clamp(9px,0.85vw,12px); color: var(--muted); margin-bottom: clamp(12px,1.8vh,20px); }
-
-  .np-feat-status { display: inline-flex; align-items: center; gap: 6px; background: rgba(200,169,126,0.1); border: 1px solid rgba(200,169,126,0.28); border-radius: 6px; padding: clamp(4px,0.6vh,7px) clamp(10px,1vw,14px); font-size: clamp(9px,0.85vw,11px); font-weight: 600; color: var(--accent); margin-bottom: clamp(12px,1.8vh,20px); }
-
-  .np-feat-overview { font-size: clamp(9px,0.88vw,13px); color: var(--muted); line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-
-  .np-feat-nav { position: absolute; z-index: 3; bottom: clamp(16px,2.5vh,28px); right: clamp(16px,2vw,28px); display: flex; gap: 6px; align-items: center; }
-  .np-feat-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); transition: all .3s; }
-  .np-feat-dot.active { background: var(--accent); width: 12px; border-radius: 3px; }
 
   /* ══════════════════════════════════════════
      SCREEN 2 — UPCOMING  (full 6-col grid)
@@ -204,6 +151,44 @@
   .idle-posters { display: flex; gap: clamp(7px,0.9vw,13px); margin-top: clamp(16px,2.5vh,28px); }
   .idle-posters img { width: clamp(44px,4.5vw,70px); aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; opacity: 0.14; border: 1px solid var(--border); background: var(--surf2); }
 
+  @media (max-width: 1100px) {
+    #s-np { grid-template-columns: minmax(170px, 36vw) minmax(0, 1fr); gap: clamp(16px, 3.2vw, 40px); padding: clamp(16px, 4vh, 42px) clamp(16px, 4vw, 48px); }
+    .big-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  @media (max-width: 760px) {
+    html, body { overflow: hidden; }
+    #s-np { grid-template-columns: 1fr; grid-template-rows: minmax(0, 52vh) minmax(0, 1fr); align-content: start; gap: 14px; padding: 14px; overflow-y: auto; }
+    .np-poster-region { width: min(58vw, 250px); max-height: 52vh; }
+    .np-poster-region img { max-height: 52vh; }
+    .np-scroll { max-width: none; max-height: none; overflow: visible; padding-right: 0; gap: 9px; }
+    .np-title { font-size: clamp(1.55rem, 8vw, 2.4rem); }
+    .np-overview { -webkit-line-clamp: 3; }
+    #s-up { padding: 16px; gap: 12px; overflow-y: auto; }
+    .big-grid { grid-template-columns: repeat(3, 1fr); overflow: visible; }
+    .sp-body { flex-direction: column; justify-content: center; align-items: flex-start; padding: 18px; gap: 18px; overflow-y: auto; }
+    .sp-poster { width: min(44vw, 180px); }
+    .sp-info { max-width: none; }
+    .idle-posters { max-width: calc(100vw - 28px); overflow: hidden; }
+  }
+
+  @media (max-width: 460px) {
+    #s-np { grid-template-rows: minmax(0, 46vh) minmax(0, 1fr); }
+    .np-poster-region { width: min(66vw, 210px); max-height: 46vh; }
+    .np-poster-region img { max-height: 46vh; }
+    .file-grid { grid-template-columns: 1fr; }
+    .big-grid { grid-template-columns: repeat(2, 1fr); }
+    .bt { font-size: .78rem; }
+    .bb, .br { max-width: calc(100% - 12px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  }
+
+  @media (max-height: 520px) and (min-width: 761px) {
+    #s-np { grid-template-columns: minmax(130px, 24vw) minmax(0, 1fr); padding-top: 12px; padding-bottom: 12px; }
+    .np-title { font-size: clamp(1.5rem, 3.4vw, 3.2rem); }
+    .np-overview { -webkit-line-clamp: 2; }
+    .cast-row, #npCastWrap { display: none !important; }
+  }
+
   /* page dots */
   #pdots { position: fixed; bottom: clamp(10px,1.8vh,18px); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; align-items: center; z-index: 300; pointer-events: none; }
   .pdot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); transition: all .3s; }
@@ -218,8 +203,9 @@
   <div id="wipeOv"></div>
 
   <!-- ════ SCREEN 1: NOW PLAYING ════ -->
-  <div class="screen active" id="s-np">
-    <!-- left: movie info -->
+  <div class="screen" id="s-np">
+    <div class="np-backdrop" id="npBackdrop"></div>
+    <div class="np-shade"></div>
     <div class="np-left">
       <div class="np-poster-region">
         <div class="np-live"><span class="live-dot"></span>Now Playing</div>
@@ -229,6 +215,7 @@
       <div class="np-scroll">
         <div>
           <div class="np-title" id="npTitle">—</div>
+          <div class="np-subtitle" id="npSubtitle" style="display:none"></div>
           <div class="np-meta"  id="npMeta"></div>
         </div>
         <div class="np-ratings" id="npRats"></div>
@@ -239,8 +226,8 @@
         <div class="watcher">
           <div class="avatar" id="npAv">?</div>
           <div style="flex:1;min-width:0">
-            <div style="color:var(--text);font-weight:600;font-size:clamp(8px,0.75vw,10px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="npUser">—</div>
-            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(7px,0.65vw,9px)" id="npDev">—</div>
+            <div style="color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="npUser">—</div>
+            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="npDev">—</div>
           </div>
         </div>
         <div class="file-grid" id="npFile" style="display:none"></div>
@@ -250,23 +237,6 @@
           <div class="cast-row" id="npCast"></div>
         </div>
       </div>
-    </div>
-
-    <!-- right: single featured "up next" card -->
-    <div class="np-right">
-      <div class="np-right-bg" id="npRightBg"></div>
-      <div class="np-right-grad"></div>
-      <div class="np-featured">
-        <img class="np-feat-poster" id="npFeatPoster" src="" alt="">
-        <div class="np-feat-info">
-          <div class="np-feat-eyebrow" id="npFeatEye">Up Next</div>
-          <div class="np-feat-title"   id="npFeatTitle">—</div>
-          <div class="np-feat-meta"    id="npFeatMeta"></div>
-          <div class="np-feat-status"  id="npFeatStatus" style="display:none"></div>
-          <div class="np-feat-overview" id="npFeatOv"></div>
-        </div>
-      </div>
-      <div class="np-feat-nav" id="npFeatNav"></div>
     </div>
   </div>
 
@@ -298,7 +268,7 @@
   </div>
 
   <!-- ════ SCREEN 4: IDLE ════ -->
-  <div class="screen" id="s-idle">
+  <div class="screen active" id="s-idle">
     <div class="idle-clock" id="clock">--:--</div>
     <div class="idle-label">Nothing playing</div>
     <div class="idle-posters" id="idlePosts"></div>
@@ -313,10 +283,9 @@ const fadeOv = document.getElementById('fadeOv');
 const wipeOv = document.getElementById('wipeOv');
 const CLS    = { downloading:'s-dl', available:'s-av', requested:'s-rq' };
 
-let cur=3, locked=false, sTmr=null, pTmr=null, progTmr=null, featTmr=null;
+let cur=3, locked=false, sTmr=null, pTmr=null, progTmr=null;
 let xing=false, state=null;
 let anim='fade', scrDur=15000, pollMs=5000, lPos=0, lDur=0;
-let featItems=[], featIdx=0;
 
 // ─── logging ──────────────────────────────────────────────────────
 const LOG = {
@@ -403,7 +372,10 @@ function svcLabel(s){const v=[];if(s.services?.radarr)v.push('Radarr');if(s.serv
 function renderNP(np){
   LOG.info('Now Playing:',np.title);
   if(np.posterUrl)document.getElementById('npPoster').src=np.posterUrl;
+  document.getElementById('npBackdrop').style.backgroundImage=(np.backdropUrl||np.posterUrl)?`url('${np.backdropUrl||np.posterUrl}')`:'none';
   document.getElementById('npTitle').textContent=np.title||'—';
+  const sub=document.getElementById('npSubtitle');
+  if(np.subtitle){sub.textContent=np.subtitle;sub.style.display='';}else{sub.textContent='';sub.style.display='none';}
   document.getElementById('npMeta').textContent=[np.year,np.officialRating,np.genres].filter(Boolean).join(' · ');
 
   // quality badge
@@ -449,54 +421,6 @@ function renderNP(np){
     cr.innerHTML=np.meta.cast.map(c=>`<div class="cast-card"><img src="${c.profileUrl||''}" alt="${c.name}" onerror="this.style.display='none'"><div class="cn">${c.name.split(' ')[0]}<br>${c.name.split(' ').slice(1).join(' ')}</div></div>`).join('');
     cw.style.display='';
   }else cw.style.display='none';
-}
-
-// ─── render: now playing — right panel (single featured card) ─────
-function buildFeatItems(s){
-  // exclude the currently playing title
-  const nowTitle=(s.nowPlaying?.title||'').toLowerCase();
-  return getAllItems(s).filter(i=>i.title.toLowerCase()!==nowTitle);
-}
-
-function showFeatCard(item,total,idx){
-  if(!item)return;
-  LOG.debug('Featured card:',item.title,`(${idx+1}/${total})`);
-
-  document.getElementById('npFeatPoster').src=item.posterUrl||'';
-  document.getElementById('npRightBg').style.backgroundImage=item.posterUrl?`url('${item.posterUrl}')`:'none';
-
-  const eyebrow=item.status==='downloading'?'Arriving Soon':item.status==='requested'?'Requested':'Up Next';
-  document.getElementById('npFeatEye').textContent=eyebrow;
-  document.getElementById('npFeatTitle').textContent=item.title||'—';
-  document.getElementById('npFeatMeta').textContent=[item.year,item.type==='series'?'TV Series':'Movie'].filter(Boolean).join(' · ');
-
-  const st=document.getElementById('npFeatStatus');
-  if(item.status==='downloading'&&item.label){st.textContent='↓ '+item.label;st.style.display='';}
-  else if(item.status==='requested'){st.textContent='Requested';st.style.display='';}
-  else if(item.status==='available'){st.textContent='✓ In your library';st.style.display='';}
-  else st.style.display='none';
-
-  document.getElementById('npFeatOv').textContent=item.overview||'';
-
-  // mini dots for the featured card carousel
-  const nav=document.getElementById('npFeatNav');
-  if(total>1){
-    nav.innerHTML=Array.from({length:Math.min(total,8)},(_,i)=>`<div class="np-feat-dot${i===idx?' active':''}"></div>`).join('');
-  }else nav.innerHTML='';
-}
-
-function startFeatCycle(s){
-  clearInterval(featTmr);
-  featItems=buildFeatItems(s);
-  featIdx=0;
-  if(!featItems.length)return;
-  showFeatCard(featItems[0],featItems.length,0);
-  if(featItems.length>1){
-    featTmr=setInterval(()=>{
-      featIdx=(featIdx+1)%featItems.length;
-      showFeatCard(featItems[featIdx],featItems.length,featIdx);
-    },8000);
-  }
 }
 
 // ─── render: upcoming grid ────────────────────────────────────────
@@ -575,14 +499,12 @@ async function pollApi(){
     if(isPlaying){
       renderNP(state.nowPlaying);
       startProg();
-      startFeatCycle(state);   // keeps right panel fresh even during playback
       if(!locked){
         LOG.info('Playback started — locking to Now Playing');
         locked=true;clearTimeout(sTmr);goTo(0);
       }
     }else{
       clearInterval(progTmr);
-      clearInterval(featTmr);
       if(locked){
         LOG.info('Playback stopped — starting idle rotation');
         locked=false;
@@ -601,5 +523,4 @@ async function pollApi(){
 dots();pollApi();
 </script>
 </body>
-</html>
 </html>
