@@ -24,109 +24,45 @@
     --blue:    #a0a0f0;
   }
 
-  /* ── Reset: force true full-viewport ── */
-  html { height: 100%; }
-  body {
-    height: 100%; width: 100%;
-    margin: 0; padding: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    overflow: hidden;
-  }
+  html, body { height: 100%; margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; overflow: hidden; }
 
-  /* ── Screen container ── */
-  #app {
-    position: fixed;
-    inset: 0;          /* top:0 right:0 bottom:0 left:0 — guarantees 100vw × 100vh */
-    overflow: hidden;
-  }
+  #app { position: fixed; inset: 0; overflow: hidden; }
 
-  /* Each screen absolutely fills #app */
-  .screen {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-  .screen.active {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: all;
-  }
+  .screen { position: absolute; inset: 0; opacity: 0; visibility: hidden; pointer-events: none; }
+  .screen.active { opacity: 1; visibility: visible; pointer-events: all; }
 
-  /* Transition overlays */
   #fadeOv { position: fixed; inset: 0; background: var(--bg); opacity: 0; z-index: 200; pointer-events: none; }
   #wipeOv { position: fixed; inset: 0; background: var(--accent); transform: translateX(-101%); z-index: 200; pointer-events: none; }
 
-  /* ambient */
   .amb { position: fixed; inset: 0; pointer-events: none; z-index: 0;
-    background:
-      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(200,169,126,0.04) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 30% at 80% 20%, rgba(124,106,175,0.03) 0%, transparent 70%); }
+    background: radial-gradient(ellipse 60% 40% at 20% 80%, rgba(200,169,126,0.04) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 80% 20%, rgba(124,106,175,0.03) 0%, transparent 70%); }
 
-  /* ════════════════════════════════════════
-     SCREEN 1 – NOW PLAYING  (v3 split)
-  ════════════════════════════════════════ */
+  /* ══════════════════════════════════════════
+     SCREEN 1 — NOW PLAYING
+     Left: poster + metadata scroll
+     Right: single featured card from Up Next
+  ══════════════════════════════════════════ */
   #s-np {
     display: grid;
-    /* Left panel: fluid 22vw, capped 260–360px. Right: fills rest. */
     grid-template-columns: clamp(240px, 22vw, 340px) 1fr;
     background: var(--bg);
   }
 
-  /* ── left panel ── */
-  .np-left {
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    height: 100%;
-  }
+  /* left panel */
+  .np-left { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; height: 100%; }
 
   .np-poster-region { position: relative; flex-shrink: 0; }
-  .np-poster-region img {
-    width: 100%;
-    height: clamp(160px, 28vh, 320px);
-    object-fit: cover;
-    object-position: top;
-    display: block;
-  }
-  .np-poster-region::after {
-    content: '';
-    position: absolute; bottom: 0; left: 0; right: 0;
-    height: clamp(40px, 8vh, 80px);
-    background: linear-gradient(transparent, var(--surface));
-    pointer-events: none;
-  }
+  .np-poster-region img { width: 100%; height: clamp(160px,28vh,320px); object-fit: cover; object-position: top; display: block; }
+  .np-poster-region::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: clamp(40px,8vh,80px); background: linear-gradient(transparent, var(--surface)); pointer-events: none; }
 
-  .np-live {
-    position: absolute; top: clamp(6px,1vh,12px); left: clamp(6px,1vw,12px); z-index: 2;
-    display: flex; align-items: center; gap: 5px;
-    background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.12); border-radius: 100px;
-    padding: 3px 9px 3px 7px;
-    font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent);
-  }
+  .np-live { position: absolute; top: clamp(6px,1vh,12px); left: clamp(6px,1vw,12px); z-index: 2; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.12); border-radius: 100px; padding: 3px 9px 3px 7px; font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
   .live-dot { width: 5px; height: 5px; background: var(--red); border-radius: 50%; flex-shrink: 0; animation: pulse 1.8s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.65)} }
 
-  .np-qb {
-    position: absolute; top: clamp(6px,1vh,12px); right: clamp(6px,1vw,12px); z-index: 2;
-    background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
-    border: 1px solid rgba(200,169,126,0.3); border-radius: 4px;
-    padding: 2px 7px;
-    font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .08em; color: var(--accent);
-  }
+  .np-qb { position: absolute; top: clamp(6px,1vh,12px); right: clamp(6px,1vw,12px); z-index: 2; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); border: 1px solid rgba(200,169,126,0.3); border-radius: 4px; padding: 2px 7px; font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .08em; color: var(--accent); }
 
-  .np-scroll {
-    padding: clamp(8px,1.2vh,16px) clamp(10px,1.2vw,18px);
-    flex: 1; overflow-y: auto; scrollbar-width: none;
-    display: flex; flex-direction: column;
-    gap: clamp(6px,0.9vh,11px);
-  }
+  .np-scroll { padding: clamp(8px,1.2vh,16px) clamp(10px,1.2vw,18px); flex: 1; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: clamp(6px,0.9vh,11px); }
   .np-scroll::-webkit-scrollbar { display: none; }
 
   .np-title { font-family: 'DM Serif Display', serif; font-size: clamp(1rem,1.8vw,1.55rem); line-height: 1.15; }
@@ -141,18 +77,8 @@
   .prog-fill  { height: 100%; background: linear-gradient(90deg, var(--accent), #e8c99a); border-radius: 2px; transition: width 1s linear; }
   .prog-times { display: flex; justify-content: space-between; font-size: clamp(7px,0.65vw,9px); color: var(--muted); font-variant-numeric: tabular-nums; }
 
-  .watcher {
-    display: flex; align-items: center; gap: 7px;
-    padding: clamp(5px,0.7vh,9px) clamp(6px,0.7vw,10px);
-    background: var(--surf2); border: 1px solid var(--border); border-radius: clamp(4px,0.5vw,7px);
-    font-size: clamp(7px,0.65vw,10px); color: var(--muted);
-  }
-  .avatar {
-    width: clamp(18px,1.9vh,26px); height: clamp(18px,1.9vh,26px); border-radius: 50%;
-    background: linear-gradient(135deg,#7c6aaf,#c8a97e);
-    display: flex; align-items: center; justify-content: center;
-    font-size: clamp(8px,0.75vw,10px); font-weight: 700; color: white; flex-shrink: 0;
-  }
+  .watcher { display: flex; align-items: center; gap: 7px; padding: clamp(5px,0.7vh,9px) clamp(6px,0.7vw,10px); background: var(--surf2); border: 1px solid var(--border); border-radius: clamp(4px,0.5vw,7px); font-size: clamp(7px,0.65vw,10px); color: var(--muted); }
+  .avatar { width: clamp(18px,1.9vh,26px); height: clamp(18px,1.9vh,26px); border-radius: 50%; background: linear-gradient(135deg,#7c6aaf,#c8a97e); display: flex; align-items: center; justify-content: center; font-size: clamp(8px,0.75vw,10px); font-weight: 700; color: white; flex-shrink: 0; }
 
   .file-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(3px,0.4vw,6px); }
   .fchip { background: var(--surf2); border: 1px solid var(--border); border-radius: 4px; padding: clamp(3px,0.5vh,6px) clamp(5px,0.5vw,8px); }
@@ -168,60 +94,72 @@
   .cast-card img { width: clamp(30px,2.8vw,42px); height: clamp(30px,2.8vw,42px); border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 3px; border: 1.5px solid var(--border); background: var(--surf2); }
   .cast-card .cn { font-size: clamp(6px,0.58vw,8px); color: var(--muted); line-height: 1.3; }
 
-  /* ── right panel ── */
+  /* right panel — single featured card */
   .np-right {
-    display: flex; flex-direction: column;
-    padding: clamp(8px,1.2vh,16px) clamp(10px,1.2vw,18px);
-    gap: clamp(7px,1vh,13px);
+    position: relative;
     overflow: hidden;
-    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .rh { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-  .rh h2 { font-family: 'DM Serif Display', serif; font-size: clamp(0.8rem,1.2vw,1.1rem); font-weight: 400; }
-  .rh .rsub { font-size: clamp(7px,0.65vw,9px); color: var(--muted); }
-  .tabs { display: flex; gap: 3px; }
-  .tab { font-size: clamp(7px,0.65vw,9px); font-weight: 500; padding: 3px 8px; border-radius: 4px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .15s; }
-  .tab.active { background: var(--adim); color: var(--accent); }
 
-  .ugrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(clamp(68px,7vw,110px), 1fr));
-    gap: clamp(6px,0.8vw,12px);
-    overflow-y: auto; scrollbar-width: none;
-    align-content: start; flex: 1;
+  /* blurred backdrop using the featured card's poster */
+  .np-right-bg {
+    position: absolute; inset: -8%;
+    background-size: cover; background-position: center;
+    filter: blur(28px) brightness(0.18) saturate(1.3);
+    transform: scale(1.1); z-index: 0;
+    transition: background-image 0.8s ease;
   }
-  .ugrid::-webkit-scrollbar { display: none; }
-  .mc { transition: transform .18s; }
-  .mc:hover { transform: translateY(-3px); }
-  .mc:hover .cp { border-color: rgba(200,169,126,.4); }
-  .cpw { position: relative; margin-bottom: clamp(3px,0.4vh,5px); }
-  .cp { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: clamp(4px,0.4vw,7px); display: block; border: 1px solid var(--border); transition: border-color .18s; background: var(--surf2); }
-  .cs { position: absolute; bottom: 4px; left: 4px; font-size: clamp(6px,0.58vw,8px); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }
-  .s-av { background: rgba(90,224,122,.15); color: var(--green); border: 1px solid rgba(90,224,122,.3); }
-  .s-dl { background: rgba(200,169,126,.15); color: var(--accent); border: 1px solid rgba(200,169,126,.3); }
-  .s-rq { background: rgba(100,100,200,.15); color: var(--blue); border: 1px solid rgba(100,100,200,.3); }
-  .cr { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); border-radius: 3px; padding: 1px 4px; font-size: clamp(6px,0.58vw,8px); font-weight: 700; color: #f5c518; }
-  .ct { font-size: clamp(8px,0.75vw,11px); font-weight: 500; line-height: 1.3; margin-bottom: 1px; }
-  .cm { font-size: clamp(7px,0.65vw,9px); color: var(--muted); }
+  .np-right-grad {
+    position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(135deg, rgba(9,9,16,0.5) 0%, rgba(9,9,16,0.2) 100%);
+  }
 
-  /* ════════════════════════════════════════
-     SCREEN 2 – UPCOMING  (full poster grid)
-  ════════════════════════════════════════ */
-  #s-up {
-    background: var(--bg);
-    display: flex; flex-direction: column;
-    padding: clamp(24px,3.5vh,48px) clamp(24px,3.5vw,52px) clamp(18px,2.5vh,36px);
-    gap: clamp(14px,2vh,26px);
-    overflow: hidden;
+  .np-featured {
+    position: relative; z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: clamp(24px,3.5vw,52px);
+    padding: clamp(24px,3vw,48px);
+    max-width: 820px;
+    width: 100%;
   }
+
+  .np-feat-poster {
+    flex-shrink: 0;
+    width: clamp(120px,13vw,200px);
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    border-radius: clamp(8px,0.7vw,12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 20px 64px rgba(0,0,0,0.7);
+    background: var(--surf2);
+  }
+
+  .np-feat-info { flex: 1; min-width: 0; }
+
+  .np-feat-eyebrow { font-size: clamp(8px,0.7vw,10px); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: clamp(8px,1.2vh,14px); display: flex; align-items: center; gap: 8px; }
+  .np-feat-eyebrow::before { content: ''; display: block; width: 20px; height: 1px; background: var(--accent); }
+
+  .np-feat-title { font-family: 'DM Serif Display', serif; font-size: clamp(1.4rem,2.8vw,2.6rem); line-height: 1.08; margin-bottom: clamp(4px,0.6vh,8px); }
+  .np-feat-meta  { font-size: clamp(9px,0.85vw,12px); color: var(--muted); margin-bottom: clamp(12px,1.8vh,20px); }
+
+  .np-feat-status { display: inline-flex; align-items: center; gap: 6px; background: rgba(200,169,126,0.1); border: 1px solid rgba(200,169,126,0.28); border-radius: 6px; padding: clamp(4px,0.6vh,7px) clamp(10px,1vw,14px); font-size: clamp(9px,0.85vw,11px); font-weight: 600; color: var(--accent); margin-bottom: clamp(12px,1.8vh,20px); }
+
+  .np-feat-overview { font-size: clamp(9px,0.88vw,13px); color: var(--muted); line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+
+  .np-feat-nav { position: absolute; z-index: 3; bottom: clamp(16px,2.5vh,28px); right: clamp(16px,2vw,28px); display: flex; gap: 6px; align-items: center; }
+  .np-feat-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); transition: all .3s; }
+  .np-feat-dot.active { background: var(--accent); width: 12px; border-radius: 3px; }
+
+  /* ══════════════════════════════════════════
+     SCREEN 2 — UPCOMING  (full 6-col grid)
+  ══════════════════════════════════════════ */
+  #s-up { background: var(--bg); display: flex; flex-direction: column; padding: clamp(24px,3.5vh,48px) clamp(24px,3.5vw,52px) clamp(18px,2.5vh,36px); gap: clamp(14px,2vh,26px); overflow: hidden; }
   .up-hdr h1 { font-family: 'DM Serif Display', serif; font-size: clamp(1.4rem,2.8vw,2.4rem); font-weight: 400; margin-bottom: 4px; }
   .up-hdr .sub { font-size: clamp(9px,0.85vw,12px); color: var(--muted); }
-  .big-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: clamp(10px,1.4vw,18px);
-    flex: 1; overflow: hidden; align-content: start;
-  }
+  .big-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: clamp(10px,1.4vw,18px); flex: 1; overflow: hidden; align-content: start; }
   .big-card { transition: transform .2s; }
   .big-card:hover { transform: translateY(-4px) scale(1.02); }
   .big-card:hover .bp { border-color: rgba(200,169,126,.5); box-shadow: 0 8px 32px rgba(0,0,0,.5); }
@@ -231,55 +169,24 @@
   .br { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.72); backdrop-filter: blur(4px); border-radius: 3px; padding: 2px 5px; font-size: clamp(6px,0.58vw,8px); font-weight: 700; color: #f5c518; }
   .bt { font-size: clamp(9px,0.85vw,12px); font-weight: 500; margin-bottom: 2px; line-height: 1.3; }
   .bm { font-size: clamp(7px,0.65vw,9px); color: var(--muted); }
+  .s-av { background: rgba(90,224,122,.15); color: var(--green); border: 1px solid rgba(90,224,122,.3); }
+  .s-dl { background: rgba(200,169,126,.15); color: var(--accent); border: 1px solid rgba(200,169,126,.3); }
+  .s-rq { background: rgba(100,100,200,.15); color: var(--blue); border: 1px solid rgba(100,100,200,.3); }
 
-  /* ════════════════════════════════════════
-     SCREEN 3 – SPOTLIGHT  (cinematic hero)
-  ════════════════════════════════════════ */
+  /* ══════════════════════════════════════════
+     SCREEN 3 — SPOTLIGHT  (cinematic hero)
+  ══════════════════════════════════════════ */
   #s-sp { position: relative; overflow: hidden; background: var(--bg); }
-
-  .sp-bg {
-    position: absolute; inset: -8%;
-    background-size: cover; background-position: center;
-    filter: blur(30px) brightness(0.22) saturate(1.4);
-    transform: scale(1.1); z-index: 0;
-  }
-  .sp-grad {
-    position: absolute; inset: 0; z-index: 1;
-    background:
-      linear-gradient(90deg, rgba(9,9,16,0.97) 32%, rgba(9,9,16,0.6) 62%, rgba(9,9,16,0.18) 100%),
-      linear-gradient(0deg, rgba(9,9,16,0.55) 0%, transparent 40%);
-  }
-  .sp-body {
-    position: relative; z-index: 2;
-    display: flex; align-items: center;
-    height: 100%;
-    padding: 0 clamp(32px,6vw,80px);
-    gap: clamp(28px,5vw,64px);
-  }
-  .sp-poster {
-    width: clamp(120px,14vw,240px); flex-shrink: 0;
-    aspect-ratio: 2/3; object-fit: cover;
-    border-radius: clamp(8px,0.8vw,14px);
-    border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 24px 80px rgba(0,0,0,0.75);
-    background: var(--surf2);
-  }
+  .sp-bg { position: absolute; inset: -8%; background-size: cover; background-position: center; filter: blur(30px) brightness(0.22) saturate(1.4); transform: scale(1.1); z-index: 0; }
+  .sp-grad { position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(9,9,16,0.97) 32%, rgba(9,9,16,0.6) 62%, rgba(9,9,16,0.18) 100%), linear-gradient(0deg, rgba(9,9,16,0.55) 0%, transparent 40%); }
+  .sp-body { position: relative; z-index: 2; display: flex; align-items: center; height: 100%; padding: 0 clamp(32px,6vw,80px); gap: clamp(28px,5vw,64px); }
+  .sp-poster { width: clamp(120px,14vw,240px); flex-shrink: 0; aspect-ratio: 2/3; object-fit: cover; border-radius: clamp(8px,0.8vw,14px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 24px 80px rgba(0,0,0,0.75); background: var(--surf2); }
   .sp-info { max-width: clamp(280px,42vw,520px); }
-  .sp-eye {
-    font-size: clamp(8px,0.75vw,10px); font-weight: 600; letter-spacing: .15em; text-transform: uppercase;
-    color: var(--accent); margin-bottom: clamp(8px,1.2vh,16px);
-    display: flex; align-items: center; gap: 8px;
-  }
+  .sp-eye { font-size: clamp(8px,0.75vw,10px); font-weight: 600; letter-spacing: .15em; text-transform: uppercase; color: var(--accent); margin-bottom: clamp(8px,1.2vh,16px); display: flex; align-items: center; gap: 8px; }
   .sp-eye::before { content: ''; display: block; width: 24px; height: 1px; background: var(--accent); }
   .sp-title { font-family: 'DM Serif Display', serif; font-size: clamp(1.8rem,3.8vw,3.6rem); line-height: 1.05; margin-bottom: clamp(4px,0.7vh,10px); }
   .sp-meta  { font-size: clamp(9px,0.85vw,12px); color: var(--muted); margin-bottom: clamp(10px,1.5vh,18px); }
-  .sp-status {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(200,169,126,0.1); border: 1px solid rgba(200,169,126,0.28); border-radius: 6px;
-    padding: clamp(4px,0.6vh,7px) clamp(10px,1vw,14px);
-    font-size: clamp(9px,0.85vw,11px); font-weight: 600; color: var(--accent);
-    margin-bottom: clamp(10px,1.5vh,18px);
-  }
+  .sp-status { display: inline-flex; align-items: center; gap: 6px; background: rgba(200,169,126,0.1); border: 1px solid rgba(200,169,126,0.28); border-radius: 6px; padding: clamp(4px,0.6vh,7px) clamp(10px,1vw,14px); font-size: clamp(9px,0.85vw,11px); font-weight: 600; color: var(--accent); margin-bottom: clamp(10px,1.5vh,18px); }
   .sp-rats { display: flex; gap: clamp(6px,0.7vw,10px); margin-bottom: clamp(10px,1.5vh,18px); flex-wrap: wrap; }
   .sp-rpill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; padding: clamp(5px,0.6vh,8px) clamp(9px,0.9vw,13px); font-size: clamp(10px,1vw,13px); font-weight: 600; }
   .sp-rpill .srl { font-size: clamp(7px,0.65vw,9px); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
@@ -288,26 +195,17 @@
   .sp-cast-label { font-size: clamp(7px,0.65vw,9px); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-right: 4px; }
   .sp-cast img { width: clamp(26px,2.6vw,38px); height: clamp(26px,2.6vw,38px); border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.12); background: var(--surf2); }
 
-  /* ════════════════════════════════════════
-     SCREEN 4 – IDLE
-  ════════════════════════════════════════ */
-  #s-idle {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 8px; background: var(--bg);
-  }
+  /* ══════════════════════════════════════════
+     SCREEN 4 — IDLE
+  ══════════════════════════════════════════ */
+  #s-idle { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--bg); }
   .idle-clock { font-family: 'DM Serif Display', serif; font-size: clamp(4rem,11vw,8rem); line-height: 1; color: rgba(232,228,220,0.07); letter-spacing: -0.04em; margin-bottom: 8px; }
   .idle-label { font-size: clamp(8px,0.75vw,11px); color: var(--muted2); letter-spacing: .15em; text-transform: uppercase; }
   .idle-posters { display: flex; gap: clamp(7px,0.9vw,13px); margin-top: clamp(16px,2.5vh,28px); }
   .idle-posters img { width: clamp(44px,4.5vw,70px); aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; opacity: 0.14; border: 1px solid var(--border); background: var(--surf2); }
 
-  /* ════════════════════════════════════════
-     PAGE DOTS
-  ════════════════════════════════════════ */
-  #pdots {
-    position: fixed; bottom: clamp(10px,1.8vh,18px); left: 50%; transform: translateX(-50%);
-    display: flex; gap: 6px; align-items: center; z-index: 300; pointer-events: none;
-  }
+  /* page dots */
+  #pdots { position: fixed; bottom: clamp(10px,1.8vh,18px); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; align-items: center; z-index: 300; pointer-events: none; }
   .pdot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); transition: all .3s; }
   .pdot.active { background: var(--accent); width: 14px; border-radius: 3px; }
 </style>
@@ -321,6 +219,7 @@
 
   <!-- ════ SCREEN 1: NOW PLAYING ════ -->
   <div class="screen active" id="s-np">
+    <!-- left: movie info -->
     <div class="np-left">
       <div class="np-poster-region">
         <div class="np-live"><span class="live-dot"></span>Now Playing</div>
@@ -339,9 +238,9 @@
         </div>
         <div class="watcher">
           <div class="avatar" id="npAv">?</div>
-          <div style="flex:1;min-width:0;overflow:hidden">
+          <div style="flex:1;min-width:0">
             <div style="color:var(--text);font-weight:600;font-size:clamp(8px,0.75vw,10px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="npUser">—</div>
-            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="npDev">—</div>
+            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(7px,0.65vw,9px)" id="npDev">—</div>
           </div>
         </div>
         <div class="file-grid" id="npFile" style="display:none"></div>
@@ -353,23 +252,25 @@
       </div>
     </div>
 
+    <!-- right: single featured "up next" card -->
     <div class="np-right">
-      <div class="rh">
-        <div>
-          <h2>Up Next</h2>
-          <div class="rsub" id="npSub">Your library</div>
-        </div>
-        <div class="tabs">
-          <button class="tab active" data-tab="all">All</button>
-          <button class="tab" data-tab="movies">Movies</button>
-          <button class="tab" data-tab="tv">TV</button>
+      <div class="np-right-bg" id="npRightBg"></div>
+      <div class="np-right-grad"></div>
+      <div class="np-featured">
+        <img class="np-feat-poster" id="npFeatPoster" src="" alt="">
+        <div class="np-feat-info">
+          <div class="np-feat-eyebrow" id="npFeatEye">Up Next</div>
+          <div class="np-feat-title"   id="npFeatTitle">—</div>
+          <div class="np-feat-meta"    id="npFeatMeta"></div>
+          <div class="np-feat-status"  id="npFeatStatus" style="display:none"></div>
+          <div class="np-feat-overview" id="npFeatOv"></div>
         </div>
       </div>
-      <div class="ugrid" id="npGrid"></div>
+      <div class="np-feat-nav" id="npFeatNav"></div>
     </div>
   </div>
 
-  <!-- ════ SCREEN 2: UPCOMING ════ -->
+  <!-- ════ SCREEN 2: UPCOMING (full grid) ════ -->
   <div class="screen" id="s-up">
     <div class="up-hdr">
       <h1>Coming Up</h1>
@@ -378,14 +279,14 @@
     <div class="big-grid" id="upGrid"></div>
   </div>
 
-  <!-- ════ SCREEN 3: SPOTLIGHT ════ -->
+  <!-- ════ SCREEN 3: SPOTLIGHT (cinematic hero) ════ -->
   <div class="screen" id="s-sp">
     <div class="sp-bg" id="spBg"></div>
     <div class="sp-grad"></div>
     <div class="sp-body">
       <img class="sp-poster" id="spPoster" src="" alt="">
       <div class="sp-info">
-        <div class="sp-eye" id="spEye">From Your Library</div>
+        <div class="sp-eye"    id="spEye">From Your Library</div>
         <div class="sp-title"  id="spTitle">—</div>
         <div class="sp-meta"   id="spMeta"></div>
         <div class="sp-status" id="spStatus" style="display:none"></div>
@@ -404,364 +305,301 @@
   </div>
 
 </div>
-
 <script>
-// ─── constants ───────────────────────────────────────────────────
+// ─── constants & state ────────────────────────────────────────────
 const IDS    = ['s-np','s-up','s-sp','s-idle'];
 const ELS    = IDS.map(id => document.getElementById(id));
 const fadeOv = document.getElementById('fadeOv');
 const wipeOv = document.getElementById('wipeOv');
 const CLS    = { downloading:'s-dl', available:'s-av', requested:'s-rq' };
 
-// ─── state ───────────────────────────────────────────────────────
-let cur=3, locked=false, sTmr=null, pTmr=null, progTmr=null, xing=false, state=null;
-let anim='fade', scrDur=15000, pollMs=5000, lPos=0, lDur=0, tab='all';
+let cur=3, locked=false, sTmr=null, pTmr=null, progTmr=null, featTmr=null;
+let xing=false, state=null;
+let anim='fade', scrDur=15000, pollMs=5000, lPos=0, lDur=0;
+let featItems=[], featIdx=0;
 
-// ─── logging ─────────────────────────────────────────────────────
+// ─── logging ──────────────────────────────────────────────────────
 const LOG = {
-  info:  (...a) => console.info( `%c[Postarr INFO ]`, 'color:#c8a97e', ...a),
-  warn:  (...a) => console.warn( `%c[Postarr WARN ]`, 'color:#f97316', ...a),
-  error: (...a) => console.error(`%c[Postarr ERROR]`, 'color:#e05a5a', ...a),
-  debug: (...a) => console.debug(`%c[Postarr DEBUG]`, 'color:#6b6878', ...a),
+  info:  (...a) => console.info( '%c[Postarr INFO ]','color:#c8a97e',...a),
+  warn:  (...a) => console.warn( '%c[Postarr WARN ]','color:#f97316',...a),
+  error: (...a) => console.error('%c[Postarr ERROR]','color:#e05a5a',...a),
+  debug: (...a) => console.debug('%c[Postarr DEBUG]','color:#6b6878',...a),
 };
 
-// ─── clock ───────────────────────────────────────────────────────
-function tick() {
-  const n = new Date();
-  document.getElementById('clock').textContent =
-    String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
-}
-tick(); setInterval(tick, 15000);
+// ─── clock ────────────────────────────────────────────────────────
+function tick(){const n=new Date();document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
+tick(); setInterval(tick,15000);
 
-function fms(ms) {
-  if (!ms || ms <= 0) return '0:00:00';
-  const s = Math.floor(ms/1000), h = Math.floor(s/3600),
-        m = Math.floor((s%3600)/60), sc = s%60;
-  return `${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;
-}
+function fms(ms){if(!ms||ms<=0)return'0:00:00';const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
 
-// ─── transitions ─────────────────────────────────────────────────
-function show(i) {
-  ELS.forEach((e,j) => e.classList.toggle('active', j===i));
-  cur = i;
-  dots();
+// ─── transitions ──────────────────────────────────────────────────
+function show(i){ELS.forEach((e,j)=>e.classList.toggle('active',j===i));cur=i;dots();}
+function goTo(i,imm=false){
+  if(i===cur)return;
+  if(imm||xing){show(i);return;}
+  xing=true;
+  if(anim==='slide')doSlide(cur,i);
+  else if(anim==='wipe')doWipe(cur,i);
+  else doFade(cur,i);
 }
-
-function goTo(i, imm=false) {
-  if (i === cur) return;
-  if (imm || xing) { show(i); return; }
-  xing = true;
-  if      (anim==='slide') doSlide(cur, i);
-  else if (anim==='wipe')  doWipe(cur, i);
-  else                     doFade(cur, i);
+function doFade(f,t){
+  fadeOv.style.cssText='transition:none;opacity:0';fadeOv.offsetHeight;
+  fadeOv.style.cssText='transition:opacity 0.38s ease;opacity:1';
+  setTimeout(()=>{show(t);fadeOv.style.cssText='transition:opacity 0.42s ease;opacity:0';setTimeout(()=>{xing=false;},430);},390);
 }
-
-function doFade(f, t) {
-  fadeOv.style.cssText = 'transition:none;opacity:0'; fadeOv.offsetHeight;
-  fadeOv.style.cssText = 'transition:opacity 0.38s ease;opacity:1';
-  setTimeout(() => {
-    show(t);
-    fadeOv.style.cssText = 'transition:opacity 0.42s ease;opacity:0';
-    setTimeout(() => { xing = false; }, 430);
-  }, 390);
-}
-
-function doSlide(f, t) {
-  const d = t > f ? 1 : -1, inc = ELS[t], out = ELS[f];
-  inc.style.cssText = `transform:translateX(${d*100}%);opacity:1;visibility:visible;transition:none`;
+function doSlide(f,t){
+  const d=t>f?1:-1,inc=ELS[t],out=ELS[f];
+  inc.style.cssText=`transform:translateX(${d*100}%);opacity:1;visibility:visible;transition:none`;
   inc.offsetHeight;
-  inc.style.transition = out.style.transition = 'transform 0.52s cubic-bezier(0.4,0,0.2,1)';
-  inc.style.transform = 'translateX(0)';
-  out.style.transform = `translateX(${-d*100}%)`;
-  setTimeout(() => { [inc,out].forEach(e => { e.style.cssText=''; }); show(t); xing = false; }, 540);
+  inc.style.transition=out.style.transition='transform 0.52s cubic-bezier(0.4,0,0.2,1)';
+  inc.style.transform='translateX(0)';out.style.transform=`translateX(${-d*100}%)`;
+  setTimeout(()=>{[inc,out].forEach(e=>{e.style.cssText='';});show(t);xing=false;},540);
+}
+function doWipe(f,t){
+  wipeOv.style.cssText='transition:none;transform:translateX(-101%)';wipeOv.offsetHeight;
+  wipeOv.style.transition='transform 0.36s cubic-bezier(0.4,0,0.2,1)';wipeOv.style.transform='translateX(0)';
+  setTimeout(()=>{show(t);wipeOv.style.transform='translateX(101%)';setTimeout(()=>{wipeOv.style.cssText='transform:translateX(-101%)';xing=false;},370);},370);
 }
 
-function doWipe(f, t) {
-  wipeOv.style.cssText = 'transition:none;transform:translateX(-101%)'; wipeOv.offsetHeight;
-  wipeOv.style.transition = 'transform 0.36s cubic-bezier(0.4,0,0.2,1)';
-  wipeOv.style.transform = 'translateX(0)';
-  setTimeout(() => {
-    show(t);
-    wipeOv.style.transform = 'translateX(101%)';
-    setTimeout(() => { wipeOv.style.cssText = 'transform:translateX(-101%)'; xing = false; }, 370);
-  }, 370);
+// ─── rotation  (only when nothing is playing) ─────────────────────
+// When playing:  locked on s-np (index 0), no rotation
+// When idle:     cycles [s-up(1), s-sp(2), s-idle(3)]
+function getIdleRotation(s){
+  const l=[];
+  if((s.downloading?.length||s.requested?.length||s.available?.length))l.push(1);
+  if(s.spotlight)l.push(2);
+  l.push(3);
+  return l;
+}
+function startRot(){
+  clearTimeout(sTmr);if(locked)return;
+  sTmr=setTimeout(()=>{
+    if(locked||!state)return;
+    const r=getIdleRotation(state);
+    const next=r[(r.indexOf(cur)+1)%r.length];
+    anim=['fade','slide','wipe'][Math.floor(Date.now()/scrDur)%3];
+    goTo(next);startRot();
+  },scrDur);
 }
 
-// ─── rotation ────────────────────────────────────────────────────
-function getRotation(s) {
-  if (s.nowPlaying) return [0];
-  const l = [];
-  if (s.downloading?.length || s.requested?.length || s.available?.length) l.push(1);
-  if (s.spotlight) l.push(2);
-  return l.length ? l : [3];
-}
-
-function startRot() {
-  clearTimeout(sTmr);
-  if (locked) return;
-  sTmr = setTimeout(() => {
-    if (locked || !state) return;
-    const r    = getRotation(state);
-    const next = r[(r.indexOf(cur) + 1) % r.length];
-    anim = ['fade','slide','wipe'][Math.floor(Date.now() / scrDur) % 3];
-    goTo(next);
-    startRot();
-  }, scrDur);
-}
-
-// ─── page dots ───────────────────────────────────────────────────
-function dots() {
-  const r = state ? getRotation(state) : [3];
-  document.getElementById('pdots').innerHTML =
-    r.map(i => `<div class="pdot${i===cur?' active':''}"></div>`).join('');
+// ─── page dots ────────────────────────────────────────────────────
+function dots(){
+  // dots always reflect the current screen + idle rotation screens
+  const r=state?(locked?[0]:getIdleRotation(state)):[3];
+  document.getElementById('pdots').innerHTML=r.map(i=>`<div class="pdot${i===cur?' active':''}"></div>`).join('');
 }
 
 // ─── item helpers ─────────────────────────────────────────────────
-function getItems(s, t) {
-  const all = [
-    ...(s.downloading||[]).map(d => ({ title:d.title, year:'', posterUrl:d.posterUrl||null, status:'downloading', label:`${d.pct}%↓`, rating:null, type:'movie' })),
-    ...(s.available||[]).map(m   => ({ title:m.title, year:m.year, posterUrl:m.posterUrl, status:'available', label:'Available', rating:m.rating||null, type:m.type||'movie' })),
-    ...(s.requested||[]).map(r   => ({ title:r.title, year:r.year, posterUrl:r.posterUrl, status:'requested', label:'Requested', rating:null, type:r.type||'movie' })),
+function getAllItems(s){
+  return[
+    ...(s.downloading||[]).map(d=>({title:d.title,year:'',posterUrl:d.posterUrl||null,status:'downloading',label:`${d.pct}% downloading`,rating:null,type:'movie',overview:''})),
+    ...(s.available||[]).map(m=>({title:m.title,year:m.year,posterUrl:m.posterUrl,status:'available',label:'Available',rating:m.rating||null,type:m.type||'movie',overview:m.overview||''})),
+    ...(s.requested||[]).map(r=>({title:r.title,year:r.year,posterUrl:r.posterUrl,status:'requested',label:'Requested',rating:null,type:r.type||'movie',overview:''})),
   ];
-  if (t==='movies') return all.filter(i => i.type !== 'series');
-  if (t==='tv')     return all.filter(i => i.type === 'series');
-  return all;
 }
+function svcLabel(s){const v=[];if(s.services?.radarr)v.push('Radarr');if(s.services?.sonarr)v.push('Sonarr');if(s.services?.seer)v.push('Seer');return v.length?`Your library · ${v.join(' · ')}`:'Your library';}
 
-function svcLabel(s) {
-  const v = [];
-  if (s.services?.radarr) v.push('Radarr');
-  if (s.services?.sonarr) v.push('Sonarr');
-  if (s.services?.seer)   v.push('Seer');
-  return v.length ? `Your library · ${v.join(' · ')}` : 'Your library';
-}
-
-// ─── render: now playing (left panel) ────────────────────────────
-function renderNP(np) {
-  LOG.info('Rendering Now Playing:', np.title);
-
-  if (np.posterUrl) document.getElementById('npPoster').src = np.posterUrl;
-
-  document.getElementById('npTitle').textContent = np.title || '—';
-  const meta = [np.year, np.officialRating, np.genres].filter(Boolean).join(' · ');
-  document.getElementById('npMeta').textContent = meta;
+// ─── render: now playing — left panel ─────────────────────────────
+function renderNP(np){
+  LOG.info('Now Playing:',np.title);
+  if(np.posterUrl)document.getElementById('npPoster').src=np.posterUrl;
+  document.getElementById('npTitle').textContent=np.title||'—';
+  document.getElementById('npMeta').textContent=[np.year,np.officialRating,np.genres].filter(Boolean).join(' · ');
 
   // quality badge
-  const qb = document.getElementById('npQb');
-  if (np.fileDetails) {
-    const p = [np.fileDetails.resolution, np.fileDetails.hdr, np.fileDetails.audioCodec].filter(Boolean);
-    if (p.length) { qb.textContent = p.join(' · '); qb.style.display = ''; }
-    else qb.style.display = 'none';
-  } else qb.style.display = 'none';
+  const qb=document.getElementById('npQb');
+  if(np.fileDetails){const p=[np.fileDetails.resolution,np.fileDetails.hdr,np.fileDetails.audioCodec].filter(Boolean);if(p.length){qb.textContent=p.join(' · ');qb.style.display='';}else qb.style.display='none';}
+  else qb.style.display='none';
 
-  // ratings
-  const re = document.getElementById('npRats');
-  re.innerHTML = '';
-  const sc = np.communityRating || np.meta?.voteAverage;
-  if (sc) re.innerHTML = `<div class="rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sc).toFixed(1)}</span><span class="rl">Rating</span></div>`;
+  // rating
+  const re=document.getElementById('npRats');re.innerHTML='';
+  const sc=np.communityRating||np.meta?.voteAverage;
+  if(sc)re.innerHTML=`<div class="rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sc).toFixed(1)}</span><span class="rl">Rating</span></div>`;
 
   // progress
-  lPos = np.positionMs || 0;
-  lDur = np.durationMs || 0;
-  const pct = lDur > 0 ? (lPos / lDur) * 100 : 0;
-  document.getElementById('npProg').style.width     = pct + '%';
-  document.getElementById('npElapsed').textContent  = fms(lPos);
-  document.getElementById('npDur').textContent      = fms(lDur);
+  lPos=np.positionMs||0;lDur=np.durationMs||0;
+  const pct=lDur>0?(lPos/lDur)*100:0;
+  document.getElementById('npProg').style.width=pct+'%';
+  document.getElementById('npElapsed').textContent=fms(lPos);
+  document.getElementById('npDur').textContent=fms(lDur);
 
   // watcher
-  document.getElementById('npUser').textContent = np.userName   || '—';
-  document.getElementById('npDev').textContent  = np.deviceName || '—';
-  document.getElementById('npAv').textContent   = (np.userName || '?')[0].toUpperCase();
+  document.getElementById('npUser').textContent=np.userName||'—';
+  document.getElementById('npDev').textContent=np.deviceName||'—';
+  document.getElementById('npAv').textContent=(np.userName||'?')[0].toUpperCase();
 
   // file chips
-  const fe = document.getElementById('npFile');
-  if (np.fileDetails) {
-    const fd = np.fileDetails;
-    const chips = [
-      fd.resolution ? `<div class="fchip"><span class="fl">Resolution</span><span class="fv">${fd.resolution}</span></div>` : '',
-      fd.videoCodec ? `<div class="fchip"><span class="fl">Video</span><span class="fv">${fd.videoCodec}${fd.hdr?' / '+fd.hdr:''}</span></div>` : '',
-      fd.audioCodec ? `<div class="fchip"><span class="fl">Audio</span><span class="fv">${fd.audioCodec}</span></div>` : '',
-      fd.size       ? `<div class="fchip"><span class="fl">File Size</span><span class="fv">${fd.size}</span></div>` : '',
+  const fe=document.getElementById('npFile');
+  if(np.fileDetails){
+    const fd=np.fileDetails;
+    const ch=[
+      fd.resolution?`<div class="fchip"><span class="fl">Resolution</span><span class="fv">${fd.resolution}</span></div>`:'',
+      fd.videoCodec?`<div class="fchip"><span class="fl">Video</span><span class="fv">${fd.videoCodec}${fd.hdr?' / '+fd.hdr:''}</span></div>`:'',
+      fd.audioCodec?`<div class="fchip"><span class="fl">Audio</span><span class="fv">${fd.audioCodec}</span></div>`:'',
+      fd.size?`<div class="fchip"><span class="fl">File Size</span><span class="fv">${fd.size}</span></div>`:'',
     ].filter(Boolean).join('');
-    if (chips) { fe.innerHTML = chips; fe.style.display = ''; }
-    else fe.style.display = 'none';
-  } else fe.style.display = 'none';
+    if(ch){fe.innerHTML=ch;fe.style.display='';}else fe.style.display='none';
+  }else fe.style.display='none';
 
-  // overview
-  document.getElementById('npOv').textContent = np.overview || '';
+  document.getElementById('npOv').textContent=np.overview||'';
 
   // cast
-  const cw = document.getElementById('npCastWrap');
-  const cr = document.getElementById('npCast');
-  if (np.meta?.cast?.length) {
-    cr.innerHTML = np.meta.cast.map(c => `
-      <div class="cast-card">
-        <img src="${c.profileUrl||''}" alt="${c.name}" onerror="this.style.display='none'">
-        <div class="cn">${c.name.split(' ')[0]}<br>${c.name.split(' ').slice(1).join(' ')}</div>
-      </div>`).join('');
-    cw.style.display = '';
-  } else cw.style.display = 'none';
+  const cw=document.getElementById('npCastWrap'),cr=document.getElementById('npCast');
+  if(np.meta?.cast?.length){
+    cr.innerHTML=np.meta.cast.map(c=>`<div class="cast-card"><img src="${c.profileUrl||''}" alt="${c.name}" onerror="this.style.display='none'"><div class="cn">${c.name.split(' ')[0]}<br>${c.name.split(' ').slice(1).join(' ')}</div></div>`).join('');
+    cw.style.display='';
+  }else cw.style.display='none';
 }
 
-// ─── render: up next (right panel) ───────────────────────────────
-function renderUpNext(s) {
-  const it = getItems(s, tab);
-  document.getElementById('npGrid').innerHTML = it.slice(0,20).map(i => `
-    <div class="mc">
-      <div class="cpw">
-        <img class="cp" src="${i.posterUrl||''}" alt="${i.title}" onerror="this.style.opacity=0.15">
-        <div class="cs ${CLS[i.status]}">${i.label}</div>
-        ${i.rating ? `<div class="cr">★${parseFloat(i.rating).toFixed(1)}</div>` : ''}
-      </div>
-      <div class="ct">${i.title}</div>
-      <div class="cm">${i.year||''}</div>
-    </div>`).join('');
-  document.getElementById('npSub').textContent = svcLabel(s);
+// ─── render: now playing — right panel (single featured card) ─────
+function buildFeatItems(s){
+  // exclude the currently playing title
+  const nowTitle=(s.nowPlaying?.title||'').toLowerCase();
+  return getAllItems(s).filter(i=>i.title.toLowerCase()!==nowTitle);
 }
 
-// ─── render: upcoming (full grid) ────────────────────────────────
-function renderUpcoming(s) {
-  const it = getItems(s, 'all');
-  LOG.info('Rendering Upcoming:', it.length, 'items');
-  document.getElementById('upGrid').innerHTML = it.slice(0,12).map(i => `
+function showFeatCard(item,total,idx){
+  if(!item)return;
+  LOG.debug('Featured card:',item.title,`(${idx+1}/${total})`);
+
+  document.getElementById('npFeatPoster').src=item.posterUrl||'';
+  document.getElementById('npRightBg').style.backgroundImage=item.posterUrl?`url('${item.posterUrl}')`:'none';
+
+  const eyebrow=item.status==='downloading'?'Arriving Soon':item.status==='requested'?'Requested':'Up Next';
+  document.getElementById('npFeatEye').textContent=eyebrow;
+  document.getElementById('npFeatTitle').textContent=item.title||'—';
+  document.getElementById('npFeatMeta').textContent=[item.year,item.type==='series'?'TV Series':'Movie'].filter(Boolean).join(' · ');
+
+  const st=document.getElementById('npFeatStatus');
+  if(item.status==='downloading'&&item.label){st.textContent='↓ '+item.label;st.style.display='';}
+  else if(item.status==='requested'){st.textContent='Requested';st.style.display='';}
+  else if(item.status==='available'){st.textContent='✓ In your library';st.style.display='';}
+  else st.style.display='none';
+
+  document.getElementById('npFeatOv').textContent=item.overview||'';
+
+  // mini dots for the featured card carousel
+  const nav=document.getElementById('npFeatNav');
+  if(total>1){
+    nav.innerHTML=Array.from({length:Math.min(total,8)},(_,i)=>`<div class="np-feat-dot${i===idx?' active':''}"></div>`).join('');
+  }else nav.innerHTML='';
+}
+
+function startFeatCycle(s){
+  clearInterval(featTmr);
+  featItems=buildFeatItems(s);
+  featIdx=0;
+  if(!featItems.length)return;
+  showFeatCard(featItems[0],featItems.length,0);
+  if(featItems.length>1){
+    featTmr=setInterval(()=>{
+      featIdx=(featIdx+1)%featItems.length;
+      showFeatCard(featItems[featIdx],featItems.length,featIdx);
+    },8000);
+  }
+}
+
+// ─── render: upcoming grid ────────────────────────────────────────
+function renderUpcoming(s){
+  const it=getAllItems(s);
+  LOG.info('Upcoming grid:',it.length,'items');
+  document.getElementById('upGrid').innerHTML=it.slice(0,12).map(i=>`
     <div class="big-card">
       <div class="bpw">
         <img class="bp" src="${i.posterUrl||''}" alt="${i.title}" onerror="this.style.opacity=0.15">
         <div class="bb ${CLS[i.status]}">${i.label}</div>
-        ${i.rating ? `<div class="br">★${parseFloat(i.rating).toFixed(1)}</div>` : ''}
+        ${i.rating?`<div class="br">★${parseFloat(i.rating).toFixed(1)}</div>`:''}
       </div>
       <div class="bt">${i.title}</div>
       <div class="bm">${i.year||''}</div>
     </div>`).join('');
-  document.getElementById('upSub').textContent = svcLabel(s);
+  document.getElementById('upSub').textContent=svcLabel(s);
 }
 
-// ─── render: spotlight ───────────────────────────────────────────
-function renderSpotlight(s) {
-  const sp = s.spotlight;
-  if (!sp) { LOG.debug('Spotlight: no item'); return; }
-  LOG.info('Rendering Spotlight:', sp.title);
-
-  document.getElementById('spTitle').textContent = sp.title || '—';
-  document.getElementById('spMeta').textContent  = [sp.year, sp.source==='sonarr' ? 'TV Series' : 'Movie'].filter(Boolean).join(' · ');
-  document.getElementById('spEye').textContent   = sp.status==='downloading' ? 'Arriving Soon' : sp.status==='requested' ? 'Requested' : 'From Your Library';
-
-  const st = document.getElementById('spStatus');
-  if (sp.status==='downloading' && sp.pct!=null) {
-    st.innerHTML = `↓ Downloading — ${sp.pct}% complete`; st.style.display = '';
-  } else if (sp.status==='available') {
-    st.innerHTML = '✓ In your library'; st.style.display = '';
-  } else st.style.display = 'none';
-
-  document.getElementById('spOv').textContent = sp.overview || '';
-
-  if (sp.posterUrl) {
-    document.getElementById('spPoster').src = sp.posterUrl;
-    document.getElementById('spBg').style.backgroundImage = `url('${sp.posterUrl}')`;
-  }
-
-  const re = document.getElementById('spRats');
-  re.innerHTML = '';
-  if (sp.rating) re.innerHTML = `<div class="sp-rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sp.rating).toFixed(1)}</span><span class="srl">Rating</span></div>`;
-
-  const ce = document.getElementById('spCast');
-  if (sp.cast?.length) {
-    ce.innerHTML = `<span class="sp-cast-label">Cast</span>` +
-      sp.cast.map(c => `<img src="${c.profileUrl||''}" alt="${c.name}" title="${c.name}" onerror="this.style.display='none'">`).join('');
-    ce.style.display = '';
-  } else ce.style.display = 'none';
+// ─── render: spotlight ────────────────────────────────────────────
+function renderSpotlight(s){
+  const sp=s.spotlight;if(!sp){LOG.debug('No spotlight item');return;}
+  LOG.info('Spotlight:',sp.title);
+  document.getElementById('spTitle').textContent=sp.title||'—';
+  document.getElementById('spMeta').textContent=[sp.year,sp.source==='sonarr'?'TV Series':'Movie'].filter(Boolean).join(' · ');
+  document.getElementById('spEye').textContent=sp.status==='downloading'?'Arriving Soon':sp.status==='requested'?'Requested':'From Your Library';
+  const st=document.getElementById('spStatus');
+  if(sp.status==='downloading'&&sp.pct!=null){st.innerHTML=`↓ Downloading — ${sp.pct}% complete`;st.style.display='';}
+  else if(sp.status==='available'){st.innerHTML='✓ In your library';st.style.display='';}
+  else st.style.display='none';
+  document.getElementById('spOv').textContent=sp.overview||'';
+  if(sp.posterUrl){document.getElementById('spPoster').src=sp.posterUrl;document.getElementById('spBg').style.backgroundImage=`url('${sp.posterUrl}')`;}
+  const re=document.getElementById('spRats');re.innerHTML='';
+  if(sp.rating)re.innerHTML=`<div class="sp-rpill"><span style="color:#f5c518">★</span><span>${parseFloat(sp.rating).toFixed(1)}</span><span class="srl">Rating</span></div>`;
+  const ce=document.getElementById('spCast');
+  if(sp.cast?.length){ce.innerHTML=`<span class="sp-cast-label">Cast</span>`+sp.cast.map(c=>`<img src="${c.profileUrl||''}" alt="${c.name}" title="${c.name}" onerror="this.style.display='none'">`).join('');ce.style.display='';}
+  else ce.style.display='none';
 }
 
-// ─── render: idle ────────────────────────────────────────────────
-function renderIdle(s) {
-  const urls = [
-    ...(s.available||[]), ...(s.requested||[]), ...(s.downloading||[])
-  ].map(i => i.posterUrl).filter(Boolean).slice(0, 7);
-  document.getElementById('idlePosts').innerHTML = urls.map(u => `<img src="${u}" alt="">`).join('');
+// ─── render: idle ─────────────────────────────────────────────────
+function renderIdle(s){
+  const urls=getAllItems(s).map(i=>i.posterUrl).filter(Boolean).slice(0,7);
+  document.getElementById('idlePosts').innerHTML=urls.map(u=>`<img src="${u}" alt="">`).join('');
 }
 
 // ─── progress tick ────────────────────────────────────────────────
-function startProg() {
+function startProg(){
   clearInterval(progTmr);
-  progTmr = setInterval(() => {
-    if (!state?.nowPlaying || state.nowPlaying.isPaused) return;
-    lPos = Math.min(lPos + 1000, lDur);
-    const pct = lDur > 0 ? (lPos / lDur) * 100 : 0;
-    document.getElementById('npProg').style.width    = pct + '%';
-    document.getElementById('npElapsed').textContent = fms(lPos);
-  }, 1000);
+  progTmr=setInterval(()=>{
+    if(!state?.nowPlaying||state.nowPlaying.isPaused)return;
+    lPos=Math.min(lPos+1000,lDur);
+    const pct=lDur>0?(lPos/lDur)*100:0;
+    document.getElementById('npProg').style.width=pct+'%';
+    document.getElementById('npElapsed').textContent=fms(lPos);
+  },1000);
 }
 
-// ─── tab switching ────────────────────────────────────────────────
-document.querySelectorAll('.tab').forEach(b => {
-  b.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-    tab = b.dataset.tab;
-    if (state) renderUpNext(state);
-  });
-});
-
-// ─── poll ────────────────────────────────────────────────────────
-async function pollApi() {
-  try {
+// ─── poll ─────────────────────────────────────────────────────────
+async function pollApi(){
+  try{
     LOG.debug('Polling /api/state');
-    const res = await fetch('/api/state');
-    if (!res.ok) { LOG.warn('Poll failed:', res.status, res.statusText); return; }
-    const ns = await res.json();
+    const res=await fetch('/api/state');
+    if(!res.ok){LOG.warn('Poll failed:',res.status,res.statusText);return;}
+    const ns=await res.json();
+    LOG.info('State:',{playing:ns.nowPlaying?`"${ns.nowPlaying.title}"`:null,available:ns.available?.length,downloading:ns.downloading?.length,requested:ns.requested?.length});
+    const wasPlaying=!!state?.nowPlaying,isPlaying=!!ns.nowPlaying;
+    state=ns;
+    scrDur=(state.config?.screenDuration||15)*1000;
+    pollMs=(state.config?.pollInterval||5)*1000;
 
-    LOG.info('State received', {
-      nowPlaying:  ns.nowPlaying ? `"${ns.nowPlaying.title}"` : null,
-      available:   ns.available?.length,
-      downloading: ns.downloading?.length,
-      requested:   ns.requested?.length,
-    });
-
-    const wasPlaying = !!state?.nowPlaying;
-    const isPlaying  = !!ns.nowPlaying;
-    state = ns;
-
-    scrDur = (state.config?.screenDuration || 15) * 1000;
-    pollMs = (state.config?.pollInterval   || 5)  * 1000;
-
-    // Render all screens with fresh data every poll
-    if (isPlaying) renderNP(state.nowPlaying);
-    renderUpNext(state);
+    // always render non-playing screens
     renderUpcoming(state);
     renderSpotlight(state);
     renderIdle(state);
-    dots();
 
-    if (isPlaying) {
+    if(isPlaying){
+      renderNP(state.nowPlaying);
       startProg();
-      if (!locked) {
+      startFeatCycle(state);   // keeps right panel fresh even during playback
+      if(!locked){
         LOG.info('Playback started — locking to Now Playing');
-        locked = true; clearTimeout(sTmr); goTo(0);
+        locked=true;clearTimeout(sTmr);goTo(0);
       }
-    } else {
+    }else{
       clearInterval(progTmr);
-      if (locked) {
-        LOG.info('Playback stopped — unlocking, starting rotation');
-        locked = false;
-        const r = getRotation(state);
-        goTo(r[0]); startRot();
-      } else if (!sTmr) {
-        LOG.info('Boot — starting rotation');
-        const r = getRotation(state);
-        goTo(r[0], true); startRot();
+      clearInterval(featTmr);
+      if(locked){
+        LOG.info('Playback stopped — starting idle rotation');
+        locked=false;
+        const r=getIdleRotation(state);goTo(r[0]);startRot();
+      }else if(!sTmr){
+        LOG.info('Boot — starting idle rotation');
+        const r=getIdleRotation(state);goTo(r[0],true);startRot();
       }
     }
-  } catch (e) {
-    LOG.error('Poll error:', e.message, e);
-  } finally {
-    clearTimeout(pTmr);
-    pTmr = setTimeout(pollApi, pollMs);
-  }
+    dots();
+  }catch(e){LOG.error('Poll error:',e.message,e);}
+  finally{clearTimeout(pTmr);pTmr=setTimeout(pollApi,pollMs);}
 }
 
 // ─── boot ─────────────────────────────────────────────────────────
-dots();
-pollApi();
+dots();pollApi();
 </script>
 </body>
+</html>
 </html>
